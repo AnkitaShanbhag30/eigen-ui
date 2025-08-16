@@ -115,26 +115,46 @@ class LLMOrchestrator:
             return self._get_fallback_outline(brand, channel)
     
     def generate_template_code(self, strategy: Dict, outline: Dict, brand: Dict, channel: str) -> str:
-        """Generate dynamic J2 template code using LLM"""
+        """Generate dynamic J2 template code using LLM with enhanced complexity and visual appeal"""
         start_time = time.time()
         
         # Get channel-specific requirements
         channel_requirements = self._get_channel_requirements(channel)
         
-        # Create a more specific prompt with actual content examples
+        # Create a more sophisticated prompt for complex, visually appealing templates
         system_prompt = f"""
-        You are a Jinja2 template developer. Create a complete HTML template for {channel}.
+        You are an expert Jinja2 template developer and UI/UX designer. Create a sophisticated, production-ready HTML template for {channel}.
         
-        CRITICAL: Use the actual content data provided, NOT placeholder text like "Feature 1", "Description of feature 1".
-        
-        Generate a complete, production-ready Jinja2 template that:
-        1. Uses the brand colors and fonts dynamically with Jinja2 variables
-        2. Implements responsive design
-        3. Follows modern CSS practices
-        4. Includes proper Jinja2 syntax for dynamic content
-        5. Matches the {channel} format requirements
-        6. Uses the actual content from the outline (headline, subheadline, sections, cta)
-        7. Iterates through sections to display real content, not placeholders
+        CRITICAL REQUIREMENTS:
+        1. Use the actual content data provided, NOT placeholder text
+        2. Create a MODERN, VISUALLY APPEALING design with:
+           - Advanced CSS Grid/Flexbox layouts
+           - Smooth animations and transitions
+           - Professional typography hierarchy
+           - Card-based component design
+           - Responsive breakpoints
+           - Modern spacing and shadows
+           - Interactive hover effects
+        3. Implement COMPLEX STRUCTURE:
+           - Multiple layout sections with different styles
+           - Hero section with visual impact
+           - Feature grids with varying layouts
+           - Testimonial/quote sections
+           - Call-to-action with visual emphasis
+           - Footer with additional information
+        4. Use ADVANCED CSS FEATURES:
+           - CSS custom properties (variables)
+           - Modern CSS selectors
+           - Flexbox and Grid layouts
+           - Transform and transition effects
+           - Box shadows and gradients
+           - Responsive design patterns
+        5. Ensure BRAND INTEGRATION:
+           - Dynamic color schemes
+           - Typography that matches brand
+           - Consistent visual language
+        6. Follow {channel} format requirements
+        7. Use proper Jinja2 syntax for all dynamic content
         """
         
         user_prompt = f"""
@@ -145,6 +165,7 @@ class LLMOrchestrator:
         - Colors: {brand.get('colors', {})}
         - Fonts: {brand.get('fonts_detected', [])}
         - Name: {brand.get('name')}
+        - Tone: {brand.get('tone', 'professional')}
         
         Content Structure (USE THIS REAL CONTENT):
         - Headline: {outline.get('headline')}
@@ -155,27 +176,41 @@ class LLMOrchestrator:
         Section Details:
         {json.dumps(outline.get('sections', []), indent=2)}
         
-        Example of how to use sections:
+        Design Requirements:
+        - Create a hero section with large, impactful typography
+        - Use CSS Grid for feature sections with varying column layouts
+        - Implement card-based design for content sections
+        - Add subtle animations (hover effects, transitions)
+        - Use modern CSS features (custom properties, flexbox, grid)
+        - Ensure mobile-first responsive design
+        - Create visual hierarchy with typography and spacing
+        
+        Example of sophisticated section structure:
         {{% for section in sections %}}
-        <div class="feature">
-            <h2>{{{{ section.title }}}}</h2>
-            <p>{{{{ section.description }}}}</p>
-            {{% if section.bullets %}}
-            <ul>
-                {{% for bullet in section.bullets %}}
-                <li>{{{{ bullet }}}}</li>
-                {{% endfor %}}
-            </ul>
-            {{% endif %}}
+        <div class="content-card content-card--{{{{ loop.index % 3 }}}}">
+            <div class="card-header">
+                <h2 class="card-title">{{{{ section.title }}}}</h2>
+                <div class="card-icon">{{{{ loop.index }}}}</div>
+            </div>
+            <div class="card-body">
+                <p class="card-description">{{{{ section.description }}}}</p>
+                {{% if section.bullets %}}
+                <ul class="feature-list">
+                    {{% for bullet in section.bullets %}}
+                    <li class="feature-item">{{{{ bullet }}}}</li>
+                    {{% endfor %}}
+                </ul>
+                {{% endif %}}
+            </div>
         </div>
         {{% endfor %}}
         
-        DO NOT use placeholder text like "Feature 1", "Description of feature 1". Use the real content from the sections array.
+        DO NOT use placeholder text. Use the real content from the sections array.
+        Create a template that looks professional and modern, suitable for enterprise use.
         """
         
         try:
             # For template generation, we need raw text, not JSON
-            # So we'll use a different approach
             combined_prompt = f"{system_prompt}\n\n{user_prompt}"
             
             # Use the LLM client directly for raw text generation
@@ -184,8 +219,8 @@ class LLMOrchestrator:
                 response = self.llm.client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": combined_prompt}],
-                    temperature=0.1,
-                    max_tokens=2000
+                    temperature=0.2,
+                    max_tokens=3000
                 )
                 template_code = response.choices[0].message.content
             else:
@@ -212,60 +247,96 @@ class LLMOrchestrator:
             
             return template_code
         except Exception as e:
-            print(f"⚠️ Template generation failed: {e}")
+            print(f"⚠️ Enhanced template generation failed: {e}")
             return self._get_fallback_template(channel)
     
     def generate_hero_image_prompt(self, strategy: Dict, outline: Dict, brand: Dict, channel: str) -> str:
-        """Generate optimized image prompt for hero image generation"""
+        """Generate optimized image prompt for hero image generation using enhanced LLM approach"""
         start_time = time.time()
         
-        system_prompt = f"""
-        Create an image generation prompt for a hero image that matches this content.
+        # First LLM call: Generate a creative, thematic concept
+        concept_prompt = f"""
+        You are a creative director specializing in visual concepts for {channel} content.
         
-        Generate a detailed, specific prompt for an AI image generator that will create:
-        1. A hero image appropriate for {channel}
-        2. Visual style matching the brand tone: {brand.get('tone')}
-        3. Colors that complement: {brand.get('colors', {}).get('primary')}, {brand.get('colors', {}).get('secondary')}
-        4. Professional, high-quality appearance
+        Brand Context:
+        - Name: {brand.get('name')}
+        - Industry: {brand.get('tagline', '')}
+        - Tone: {brand.get('tone', 'professional')}
+        - Primary Color: {brand.get('colors', {}).get('primary', '#000000')}
+        - Secondary Color: {brand.get('colors', {}).get('secondary', '#666666')}
         
-        Return ONLY the image prompt, no explanations or additional text.
-        """
+        Content Focus:
+        - Headline: {outline.get('headline')}
+        - Key Message: {strategy.get('positioning', '')}
         
-        user_prompt = f"""
-        Brand: {brand.get('name')} - {brand.get('tagline')}
-        Channel: {channel}
-        Headline: {outline.get('headline')}
-        Content Angle: {strategy.get('positioning', '')}
+        Create a VISUAL CONCEPT (not a description) that:
+        1. Captures the essence of {channel} format
+        2. Represents the brand's AI/tech focus
+        3. Is visually striking and memorable
+        4. Avoids any text, words, or readable content
+        5. Uses abstract, symbolic, or metaphorical imagery
+        6. Works well with the brand colors
+        
+        Return ONLY the visual concept in 1-2 sentences, no explanations.
         """
         
         try:
-            # For image prompts, we need raw text
-            combined_prompt = f"{system_prompt}\n\n{user_prompt}"
-            
+            # Generate the visual concept
             if hasattr(self.llm, 'client'):
-                # OpenAI
                 response = self.llm.client.chat.completions.create(
                     model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": combined_prompt}],
-                    temperature=0.1,
-                    max_tokens=300
+                    messages=[{"role": "user", "content": concept_prompt}],
+                    temperature=0.8,
+                    max_tokens=100
                 )
-                image_prompt = response.choices[0].message.content
+                visual_concept = response.choices[0].message.content.strip()
             else:
-                # Fallback
-                image_prompt = f"professional {channel} hero image for {brand.get('name', 'brand')}"
+                visual_concept = "Futuristic AI technology visualization with neural networks and data flows"
+            
+            # Second LLM call: Convert concept to image generation prompt
+            image_prompt = f"""
+            You are an expert at creating image generation prompts for AI art tools.
+            
+            Visual Concept: {visual_concept}
+            Channel: {channel}
+            Brand Colors: {brand.get('colors', {}).get('primary')}, {brand.get('colors', {}).get('secondary')}
+            
+            Create a detailed image generation prompt that:
+            1. Brings the visual concept to life
+            2. Specifies artistic style (modern, minimalist, tech-focused)
+            3. Defines composition and perspective
+            4. Ensures NO text, words, or readable content
+            5. Uses the brand colors as primary palette
+            6. Creates a professional, high-quality appearance
+            7. Is optimized for AI image generation tools
+            
+            Return ONLY the image generation prompt, no explanations.
+            """
+            
+            if hasattr(self.llm, 'client'):
+                response = self.llm.client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": image_prompt}],
+                    temperature=0.3,
+                    max_tokens=200
+                )
+                final_prompt = response.choices[0].message.content.strip()
+            else:
+                final_prompt = f"Create {visual_concept} in modern minimalist style, using colors {brand.get('colors', {}).get('primary')} and {brand.get('colors', {}).get('secondary')}, professional composition, no text"
             
             self.log_workflow_step(
                 'image_prompt_generation',
-                {'channel': channel, 'headline': outline.get('headline')},
-                {'prompt_length': len(image_prompt)},
+                {'channel': channel, 'concept': visual_concept},
+                {'final_prompt': final_prompt},
                 time.time() - start_time
             )
             
-            return image_prompt.strip()
+            return final_prompt
+            
         except Exception as e:
-            print(f"⚠️ Image prompt generation failed: {e}")
-            return f"professional {channel} hero image for {brand.get('name', 'brand')}"
+            print(f"⚠️ Enhanced image prompt generation failed: {e}")
+            # Fallback to basic prompt
+            return f"Create a modern, professional hero image for {brand.get('name')} in {channel} format, using colors {brand.get('colors', {}).get('primary')} and {brand.get('colors', {}).get('secondary')}, no text, tech-focused aesthetic"
     
     def generate_hero_image(self, image_prompt: str, brand: Dict, output_path: str) -> Optional[str]:
         """Generate hero image using the image generation model"""
