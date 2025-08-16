@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{ title or 'Brand One-Pager' }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    @font-face {
+      font-family: 'BrandSans';
+      src: url('/static/fonts/BrandSans.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    :root { --brand: {{ brand_color or '#0C69F5' }}; --text: {{ text_color or '#111111' }}; --muted: #6b7280; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: BrandSans, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--text); }
+    .page {
+      width: 1200px; height: 1600px; padding: 96px;
+      display: grid; grid-template-rows: auto auto 1fr auto; gap: 24px;
+      background: #fff;
+    }
+    h1 { margin: 0; font-size: 64px; line-height: 1.05; color: var(--brand); letter-spacing: -0.5px; }
+    h2 { margin: 0; font-size: 28px; color: var(--muted); }
+    ul { margin: 8px 0 0; padding-left: 20px; line-height: 1.5; font-size: 20px; }
+    .badge { display:inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(12,105,245,0.08); color: var(--brand); font-size: 14px; }
+    .footer { margin-top: auto; font-size: 14px; color: var(--muted); }
+    .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card { border: 1px solid #eee; border-radius: 16px; padding: 16px; }
+    .kpi { font-size: 40px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="badge">{{ tag or 'Executive Summary' }}</div>
+    <h1>{{ title or 'Q3 Brand One-Pager' }}</h1>
+    <h2>{{ subtitle or 'Retail vertical' }}</h2>
+
+    <div class="grid">
+      {% for k in (kpis or []) %}
+      <div class="card">
+        <div class="kpi">{{ k.value }}</div>
+        <div class="label">{{ k.label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <ul>
+      {% for b in (bullets or []) %}
+        <li>{{ b }}</li>
+      {% endfor %}
+    </ul>
+
+    <div class="footer">{{ footer or '© 2025 YourCo' }}</div>
+  </section>
+</body>
+</html>

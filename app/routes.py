@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file, render_template
 import os
 from werkzeug.utils import secure_filename
 from .brand import BrandIdentity, save_brand, load_brand, ensure_asset_dirs, get_asset_dir
@@ -8,11 +8,17 @@ from .fonts import get_fonts_from_css_urls, get_default_fonts
 from .llm import get_llm_provider
 from .design import DesignAdvisorService
 from .imgfm import generate_hero_image
+from .renderer import validate_render_payload, render_to_bytes, get_mimetype_and_filename
 import json
 from urllib.parse import urlparse
 import re
+import io
 
 bp = Blueprint("api", __name__)
+
+@bp.route('/health')
+def health():
+    return {"ok": True}
 
 @bp.route('/ingest', methods=['POST'])
 def ingest_brand():
@@ -273,6 +279,56 @@ def get_brand_design(slug):
             "tokens": tokens,
             "google_fonts": google_fonts
         })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@bp.route('/render', methods=['POST'])
+def render_route():
+    """Render brand-styled assets (PNG or PDF) from HTML/Jinja templates"""
+    try:
+        payload = validate_render_payload(request.get_json(force=True))
+    except Exception as e:
+        return jsonify({"error": "invalid_payload", "details": str(e)}), 400
+
+    template_path = f"{payload.template}.html"
+    try:
+        html = render_template(template_path, **payload.data)
+    except Exception as e:
+        return jsonify({"error": "template_error", "details": str(e)}), 400
+
+    try:
+        out_bytes = render_to_bytes(payload, html)
+        mimetype, filename = get_mimetype_and_filename(payload)
+        return send_file(
+            io.BytesIO(out_bytes), 
+            mimetype=mimetype, 
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        return jsonify({"error": "render_error", "details": str(e)}), 500
+
+@bp.route('/healthz')
+def healthz():
+    """Health check endpoint"""
+    return {"ok": True}
+
+@bp.route('/templates', methods=['GET'])
+def list_templates():
+    """List available templates for rendering"""
+    try:
+        templates_dir = "templates"
+        if not os.path.exists(templates_dir):
+            return jsonify({"templates": []})
+        
+        templates = []
+        for filename in os.listdir(templates_dir):
+            if filename.endswith('.html'):
+                template_name = filename[:-5]  # Remove .html extension
+                templates.append(template_name)
+        
+        return jsonify({"templates": templates})
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500 
