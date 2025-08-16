@@ -29,7 +29,7 @@ app = typer.Typer(help="Brand Content Generator CLI")
 
 @app.command()
 def ingest(url: str, slug: str):
-    """Ingest brand from website URL"""
+    """Ingest brand from website URL with comprehensive UI/layout analysis"""
     typer.echo(f"Ingesting brand from {url}...")
     
     # Check API key
@@ -45,6 +45,7 @@ def ingest(url: str, slug: str):
         from app.scrape import fetch_html, extract_meta, find_images, find_css_links, visible_text_samples
         from app.scrape import extract_social_media, extract_contact_info, extract_navigation, extract_content_structure
         from app.scrape import analyze_color_scheme, detect_typography, extract_business_info
+        from app.scrape import extract_ui_structure, capture_page_screenshot, extract_css_structure
         
         html = fetch_html(url)
         if not html:
@@ -135,6 +136,22 @@ def ingest(url: str, slug: str):
         text_samples = visible_text_samples(html, max_chars=2000)  # Increased from 1500
         typer.echo(f"📝 Extracted {len(text_samples)} text samples")
         
+        # NEW: Comprehensive UI/Layout Analysis
+        typer.echo("🎨 Analyzing UI structure and layout patterns...")
+        ui_layout_data = extract_ui_structure(html, url)
+        
+        # Extract CSS structure
+        typer.echo("🎨 Analyzing CSS structure...")
+        css_structure = extract_css_structure(html, url)
+        ui_layout_data['css_structure'] = css_structure
+        
+        # Capture page screenshot
+        typer.echo("📸 Capturing page screenshot...")
+        screenshot_path = os.path.join(asset_dir, "screenshot.png")
+        if capture_page_screenshot(url, screenshot_path):
+            ui_layout_data['screenshot_path'] = screenshot_path
+            typer.echo(f"📸 Screenshot saved to {screenshot_path}")
+        
         # Enhanced LLM analysis
         typer.echo("🤖 Enhanced LLM analysis...")
         from app.design import DesignAdvisorService
@@ -176,7 +193,8 @@ def ingest(url: str, slug: str):
             keywords=keywords,
             logo_path=logo_path,
             images=downloaded_images,
-            source_notes=f"Scraped from {url}"
+            source_notes=f"Scraped from {url}",
+            ui_layout=ui_layout_data  # Include comprehensive UI/layout data
         )
         
         # Enhanced design advice
@@ -198,6 +216,41 @@ def ingest(url: str, slug: str):
         typer.echo(f"✅ Brand '{slug}' saved to {save_path}")
         typer.echo(f"📊 Total data points captured: {len(brand.dict())}")
         
+        # Show UI/Layout analysis summary
+        typer.echo("\n🎨 UI/Layout Analysis Summary:")
+        if ui_layout_data.get('page_structure'):
+            structure = ui_layout_data['page_structure']
+            typer.echo(f"   📄 Page sections: {len(structure.get('sections', []))}")
+            if structure.get('header'):
+                typer.echo(f"   🧭 Header: {structure['header'].get('tag', 'N/A')}")
+            if structure.get('hero'):
+                typer.echo(f"   🎯 Hero: {structure['hero'].get('tag', 'N/A')}")
+            if structure.get('footer'):
+                typer.echo(f"   👣 Footer: {structure['footer'].get('tag', 'N/A')}")
+        
+        if ui_layout_data.get('design_patterns'):
+            patterns = ui_layout_data['design_patterns']
+            typer.echo(f"   🎨 Design patterns: {len(patterns)} found")
+            for pattern in patterns[:3]:
+                typer.echo(f"     • {pattern.get('type', 'N/A')} ({pattern.get('layout_type', 'N/A')})")
+        
+        if ui_layout_data.get('spacing_system'):
+            spacing = ui_layout_data['spacing_system']
+            if spacing.get('common_values'):
+                typer.echo(f"   📏 Common spacing: {', '.join(spacing['common_values'][:5])}")
+        
+        if ui_layout_data.get('component_patterns'):
+            components = ui_layout_data['component_patterns']
+            if components.get('buttons'):
+                typer.echo(f"   🔘 Button patterns: {len(components['buttons'])} variants")
+            if components.get('cards'):
+                typer.echo(f"   🃏 Card patterns: {len(components['cards'])} variants")
+        
+        if ui_layout_data.get('visual_hierarchy'):
+            hierarchy = ui_layout_data['visual_hierarchy']
+            if hierarchy.get('headings'):
+                typer.echo(f"   📝 Heading levels: {', '.join(hierarchy['headings'].keys())}")
+        
         # Show summary
         typer.echo("\n📋 Brand Summary:")
         typer.echo(f"   Name: {brand.name}")
@@ -207,6 +260,8 @@ def ingest(url: str, slug: str):
         typer.echo(f"   Images: {len(brand.images)} downloaded")
         typer.echo(f"   Tone: {brand.tone}")
         typer.echo(f"   Keywords: {len(brand.keywords)} identified")
+        typer.echo(f"   UI Patterns: {len(ui_layout_data.get('design_patterns', []))} detected")
+        typer.echo(f"   Layout Sections: {len(ui_layout_data.get('page_structure', {}).get('sections', []))}")
         
     except Exception as e:
         typer.echo(f"❌ Error: {e}")
@@ -345,12 +400,7 @@ def render(
     title: str = typer.Option("", "--title", "-t", help="Custom title for the content"),
     subtitle: str = typer.Option("", "--subtitle", help="Custom subtitle"),
     cta: str = typer.Option("", "--cta", help="Custom call to action"),
-    hero: str = typer.Option("", "--hero", help="Hero image path (optional)"),
-    kpis: str = typer.Option("", "--kpis", help="KPIs in format: 'label:value,label:value'"),
-    bullets: str = typer.Option("", "--bullets", help="Bullet points separated by semicolons"),
-    sections: str = typer.Option("", "--sections", help="Custom sections in JSON format"),
-    contact: str = typer.Option("", "--contact", help="Contact email or info"),
-    cta_text: str = typer.Option("", "--cta-text", help="Custom CTA description text")
+    hero: str = typer.Option("", "--hero", help="Hero image path (optional)")
 ):
     """Render brand-styled assets (PNG or PDF) from templates using Playwright"""
     typer.echo(f"Rendering {template} template for brand {slug} to {format.upper()}...")
@@ -372,7 +422,7 @@ def render(
             typer.echo(f"❌ Invalid scale: {scale}. Must be between 1 and 3", err=True)
             raise typer.Exit(1)
         
-        # Prepare custom data with enhanced parsing
+        # Prepare custom data with basic content
         custom_data = {}
         
         # Basic content
@@ -384,50 +434,6 @@ def render(
             custom_data['cta'] = cta
         if hero:
             custom_data['hero_url'] = hero
-        if contact:
-            custom_data['contact'] = contact
-        if cta_text:
-            custom_data['cta_text'] = cta_text
-        
-        # Parse KPIs
-        if kpis:
-            try:
-                kpi_list = []
-                for kpi_pair in kpis.split(','):
-                    if ':' in kpi_pair:
-                        label, value = kpi_pair.split(':', 1)
-                        kpi_list.append({
-                            'label': label.strip(),
-                            'value': value.strip()
-                        })
-                if kpi_list:
-                    custom_data['kpis'] = kpi_list
-                    typer.echo(f"📊 Parsed {len(kpi_list)} KPIs")
-            except Exception as e:
-                typer.echo(f"⚠️  Warning: Could not parse KPIs: {e}")
-        
-        # Parse bullet points
-        if bullets:
-            try:
-                bullet_list = [b.strip() for b in bullets.split(';') if b.strip()]
-                if bullet_list:
-                    custom_data['bullets'] = bullet_list
-                    typer.echo(f"📝 Parsed {len(bullet_list)} bullet points")
-            except Exception as e:
-                typer.echo(f"⚠️  Warning: Could not parse bullets: {e}")
-        
-        # Parse custom sections
-        if sections:
-            try:
-                import json
-                sections_data = json.loads(sections)
-                if isinstance(sections_data, list):
-                    custom_data['sections'] = sections_data
-                    typer.echo(f"📋 Parsed {len(sections_data)} custom sections")
-                else:
-                    typer.echo("⚠️  Warning: Sections should be a JSON array")
-            except Exception as e:
-                typer.echo(f"⚠️  Warning: Could not parse sections JSON: {e}")
         
         # Import renderer functions
         from app.renderer import render_template_with_brand, render_to_bytes, get_mimetype_and_filename
@@ -476,12 +482,6 @@ def render(
                 typer.echo(f"   Title: {custom_data['title']}")
             if custom_data.get('subtitle'):
                 typer.echo(f"   Subtitle: {custom_data['subtitle']}")
-            if custom_data.get('kpis'):
-                typer.echo(f"   KPIs: {len(custom_data['kpis'])} metrics")
-            if custom_data.get('bullets'):
-                typer.echo(f"   Bullets: {len(custom_data['bullets'])} points")
-            if custom_data.get('sections'):
-                typer.echo(f"   Sections: {len(custom_data['sections'])} custom sections")
         
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)

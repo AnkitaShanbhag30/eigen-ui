@@ -13,7 +13,7 @@ class TemplatesLoader:
     """Loads and manages Jinja2 templates for content generation"""
     
     def __init__(self):
-        # Set up Jinja2 environment
+        # Set up Jinja2 environment with standard settings
         template_dir = os.path.join(os.path.dirname(__file__), '..', 'templates')
         self.env = Environment(
             loader=FileSystemLoader(template_dir),

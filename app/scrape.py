@@ -4,6 +4,31 @@ import re
 from typing import List, Dict, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 import os
+import json
+from dataclasses import dataclass
+from playwright.sync_api import sync_playwright
+import base64
+
+@dataclass
+class LayoutElement:
+    """Represents a layout element with its properties"""
+    tag: str
+    classes: List[str]
+    id: Optional[str]
+    text_content: str
+    position: Dict[str, int]  # x, y, width, height
+    styles: Dict[str, str]
+    children_count: int
+    is_visible: bool
+
+@dataclass
+class DesignPattern:
+    """Represents a design pattern found on the page"""
+    type: str  # 'grid', 'card', 'hero', 'navigation', 'footer', 'sidebar'
+    elements: List[LayoutElement]
+    layout_type: str  # 'horizontal', 'vertical', 'grid', 'flexbox'
+    spacing: Dict[str, int]  # margins, padding
+    alignment: str  # 'left', 'center', 'right', 'justify'
 
 def fetch_html(url: str, timeout_ms: int = 7000) -> Optional[str]:
     """Fetch HTML content with timeout"""
@@ -391,3 +416,648 @@ def detect_typography(html: str, base_url: str) -> Dict[str, any]:
     typography['sizes'] = typography['sizes'][:5]
     
     return typography 
+
+def extract_ui_structure(html: str, url: str) -> Dict[str, any]:
+    """Extract comprehensive UI structure and layout patterns"""
+    soup = BeautifulSoup(html, 'html.parser')
+    
+    # Extract layout structure
+    layout_data = {
+        'page_structure': extract_page_structure(soup),
+        'design_patterns': extract_design_patterns(soup),
+        'spacing_system': extract_spacing_system(soup),
+        'layout_grid': extract_layout_grid(soup),
+        'component_patterns': extract_component_patterns(soup),
+        'visual_hierarchy': extract_visual_hierarchy(soup),
+        'responsive_breakpoints': extract_responsive_breakpoints(soup),
+        'interaction_patterns': extract_interaction_patterns(soup)
+    }
+    
+    return layout_data
+
+def extract_page_structure(soup: BeautifulSoup) -> Dict[str, any]:
+    """Extract the overall page structure and sections"""
+    structure = {
+        'header': extract_section_structure(soup, ['header', 'nav', '.header', '.nav', '.navigation']),
+        'hero': extract_section_structure(soup, ['main', '.hero', '.banner', '.jumbotron']),
+        'content': extract_section_structure(soup, ['main', '.content', '.main-content', 'article']),
+        'sidebar': extract_section_structure(soup, ['aside', '.sidebar', '.side-content']),
+        'footer': extract_section_structure(soup, ['footer', '.footer', '.site-footer']),
+        'sections': extract_content_sections(soup)
+    }
+    
+    return structure
+
+def extract_section_structure(soup: BeautifulSoup, selectors: List[str]) -> Optional[Dict[str, any]]:
+    """Extract structure for a specific section"""
+    for selector in selectors:
+        element = soup.select_one(selector)
+        if element:
+            return {
+                'tag': element.name,
+                'classes': element.get('class', []),
+                'id': element.get('id'),
+                'text_content': element.get_text(strip=True)[:200],
+                'children_count': len(element.find_all()),
+                'has_images': bool(element.find_all('img')),
+                'has_buttons': bool(element.find_all(['button', 'a'])),
+                'layout_type': detect_layout_type(element)
+            }
+    return None
+
+def extract_content_sections(soup: BeautifulSoup) -> List[Dict[str, any]]:
+    """Extract all content sections and their structure"""
+    sections = []
+    
+    # Look for common section patterns
+    section_selectors = [
+        'section', '.section', '.content-section', '.block',
+        '[class*="section"]', '[class*="block"]', '[class*="content"]'
+    ]
+    
+    for selector in section_selectors:
+        elements = soup.select(selector)
+        for element in elements[:10]:  # Limit to first 10 sections
+            section_data = {
+                'tag': element.name,
+                'classes': element.get('class', []),
+                'title': extract_section_title(element),
+                'content_type': detect_content_type(element),
+                'layout': detect_layout_type(element),
+                'elements': extract_element_details(element),
+                'spacing': extract_element_spacing(element)
+            }
+            sections.append(section_data)
+    
+    return sections
+
+def extract_section_title(element) -> Optional[str]:
+    """Extract title from a section element"""
+    # Look for headings
+    heading = element.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+    if heading:
+        return heading.get_text(strip=True)
+    
+    # Look for aria-label or title attributes
+    aria_label = element.get('aria-label')
+    if aria_label:
+        return aria_label
+    
+    title_attr = element.get('title')
+    if title_attr:
+        return title_attr
+    
+    return None
+
+def detect_content_type(element) -> str:
+    """Detect the type of content in a section"""
+    text = element.get_text().lower()
+    
+    if any(word in text for word in ['feature', 'benefit', 'advantage']):
+        return 'features'
+    elif any(word in text for word in ['testimonial', 'review', 'quote']):
+        return 'testimonials'
+    elif any(word in text for word in ['pricing', 'plan', 'cost']):
+        return 'pricing'
+    elif any(word in text for word in ['contact', 'email', 'phone']):
+        return 'contact'
+    elif any(word in text for word in ['about', 'story', 'mission']):
+        return 'about'
+    elif any(word in text for word in ['cta', 'call', 'action']):
+        return 'cta'
+    else:
+        return 'general'
+
+def detect_layout_type(element) -> str:
+    """Detect the layout type of an element"""
+    classes = element.get('class', [])
+    styles = element.get('style', '')
+    
+    if any('grid' in cls.lower() for cls in classes) or 'grid' in styles:
+        return 'grid'
+    elif any('flex' in cls.lower() for cls in classes) or 'flex' in styles:
+        return 'flexbox'
+    elif any('card' in cls.lower() for cls in classes):
+        return 'card'
+    elif any('list' in cls.lower() for cls in classes):
+        return 'list'
+    else:
+        return 'block'
+
+def extract_element_details(element) -> List[Dict[str, any]]:
+    """Extract details about child elements"""
+    elements = []
+    
+    for child in element.find_all(['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'button', 'a'])[:20]:
+        element_data = {
+            'tag': child.name,
+            'classes': child.get('class', []),
+            'id': child.get('id'),
+            'text_content': child.get_text(strip=True)[:100],
+            'has_children': bool(child.find_all()),
+            'is_interactive': child.name in ['button', 'a'] or child.get('onclick'),
+            'styles': extract_inline_styles(child)
+        }
+        elements.append(element_data)
+    
+    return elements
+
+def extract_inline_styles(element) -> Dict[str, str]:
+    """Extract inline styles from an element"""
+    styles = {}
+    style_attr = element.get('style', '')
+    
+    if style_attr:
+        for style in style_attr.split(';'):
+            if ':' in style:
+                prop, value = style.split(':', 1)
+                styles[prop.strip()] = value.strip()
+    
+    return styles
+
+def extract_element_spacing(element) -> Dict[str, str]:
+    """Extract spacing information from element styles"""
+    styles = extract_inline_styles(element)
+    spacing = {}
+    
+    spacing_props = ['margin', 'padding', 'gap', 'row-gap', 'column-gap']
+    for prop in spacing_props:
+        if prop in styles:
+            spacing[prop] = styles[prop]
+    
+    return spacing
+
+def extract_design_patterns(soup: BeautifulSoup) -> List[DesignPattern]:
+    """Extract common design patterns from the page"""
+    patterns = []
+    
+    # Grid patterns
+    grid_elements = soup.find_all(['div', 'section'], class_=re.compile(r'grid|row|col'))
+    if grid_elements:
+        patterns.append(DesignPattern(
+            type='grid',
+            elements=[LayoutElement(
+                tag=el.name,
+                classes=el.get('class', []),
+                id=el.get('id'),
+                text_content=el.get_text(strip=True)[:100],
+                position={'x': 0, 'y': 0, 'width': 0, 'height': 0},
+                styles=extract_inline_styles(el),
+                children_count=len(el.find_all()),
+                is_visible=True
+            ) for el in grid_elements[:5]],
+            layout_type='grid',
+            spacing={},
+            alignment='left'
+        ))
+    
+    # Card patterns
+    card_elements = soup.find_all(['div', 'article'], class_=re.compile(r'card|tile|box'))
+    if card_elements:
+        patterns.append(DesignPattern(
+            type='card',
+            elements=[LayoutElement(
+                tag=el.name,
+                classes=el.get('class', []),
+                id=el.get('id'),
+                text_content=el.get_text(strip=True)[:100],
+                position={'x': 0, 'y': 0, 'width': 0, 'height': 0},
+                styles=extract_inline_styles(el),
+                children_count=len(el.find_all()),
+                is_visible=True
+            ) for el in card_elements[:5]],
+            layout_type='card',
+            spacing={},
+            alignment='left'
+        ))
+    
+    # Hero patterns
+    hero_elements = soup.find_all(['div', 'section'], class_=re.compile(r'hero|banner|jumbotron'))
+    if hero_elements:
+        patterns.append(DesignPattern(
+            type='hero',
+            elements=[LayoutElement(
+                tag=el.name,
+                classes=el.get('class', []),
+                id=el.get('id'),
+                text_content=el.get_text(strip=True)[:100],
+                position={'x': 0, 'y': 0, 'width': 0, 'height': 0},
+                styles=extract_inline_styles(el),
+                children_count=len(el.find_all()),
+                is_visible=True
+            ) for el in hero_elements[:3]],
+            layout_type='hero',
+            spacing={},
+            alignment='center'
+        ))
+    
+    return patterns
+
+def extract_spacing_system(soup: BeautifulSoup) -> Dict[str, any]:
+    """Extract the spacing system used on the page"""
+    spacing = {
+        'margins': extract_spacing_values(soup, 'margin'),
+        'padding': extract_spacing_values(soup, 'padding'),
+        'gaps': extract_spacing_values(soup, 'gap'),
+        'common_values': find_common_spacing_values(soup)
+    }
+    
+    return spacing
+
+def extract_spacing_values(soup: BeautifulSoup, property_name: str) -> List[str]:
+    """Extract specific spacing property values"""
+    values = set()
+    
+    # Look in inline styles
+    for element in soup.find_all(style=True):
+        style = element.get('style', '')
+        matches = re.findall(rf'{property_name}:\s*([^;]+)', style)
+        values.update(matches)
+    
+    # Look in CSS classes (common patterns)
+    for element in soup.find_all(class_=True):
+        classes = element.get('class', [])
+        for cls in classes:
+            if property_name in cls:
+                # Extract numeric values from class names like 'm-4', 'p-6', 'gap-8'
+                match = re.search(rf'{property_name[0]}-(\d+)', cls)
+                if match:
+                    values.add(f"{match.group(1)}px")
+    
+    return list(values)
+
+def find_common_spacing_values(soup: BeautifulSoup) -> List[str]:
+    """Find commonly used spacing values"""
+    all_spacing = []
+    
+    # Common spacing patterns
+    spacing_patterns = ['m-', 'p-', 'gap-', 'space-', 'mt-', 'mb-', 'ml-', 'mr-']
+    
+    for element in soup.find_all(class_=True):
+        classes = element.get('class', [])
+        for cls in classes:
+            for pattern in spacing_patterns:
+                if pattern in cls:
+                    match = re.search(rf'{pattern}(\d+)', cls)
+                    if match:
+                        all_spacing.append(int(match.group(1)))
+    
+    # Count occurrences and return most common
+    from collections import Counter
+    counter = Counter(all_spacing)
+    return [str(val) for val, count in counter.most_common(5)]
+
+def extract_layout_grid(soup: BeautifulSoup) -> Dict[str, any]:
+    """Extract grid layout information"""
+    grid_info = {
+        'grid_systems': [],
+        'column_patterns': [],
+        'breakpoints': []
+    }
+    
+    # Look for grid system classes
+    grid_classes = ['grid', 'row', 'col', 'container', 'wrapper']
+    for cls in grid_classes:
+        elements = soup.find_all(class_=re.compile(cls))
+        if elements:
+            grid_info['grid_systems'].append({
+                'type': cls,
+                'count': len(elements),
+                'example_classes': elements[0].get('class', [])[:5]
+            })
+    
+    # Look for column patterns
+    column_patterns = ['col-', 'w-', 'span-']
+    for pattern in column_patterns:
+        elements = soup.find_all(class_=re.compile(pattern))
+        if elements:
+            grid_info['column_patterns'].append({
+                'pattern': pattern,
+                'count': len(elements),
+                'examples': [el.get('class', [])[0] for el in elements[:3]]
+            })
+    
+    return grid_info
+
+def extract_component_patterns(soup: BeautifulSoup) -> Dict[str, any]:
+    """Extract common component patterns"""
+    components = {
+        'buttons': extract_button_patterns(soup),
+        'forms': extract_form_patterns(soup),
+        'navigation': extract_navigation_patterns(soup),
+        'cards': extract_card_patterns(soup)
+    }
+    
+    return components
+
+def extract_button_patterns(soup: BeautifulSoup) -> List[Dict[str, any]]:
+    """Extract button design patterns"""
+    buttons = soup.find_all(['button', 'a'], class_=re.compile(r'btn|button|cta'))
+    patterns = []
+    
+    for btn in buttons[:10]:
+        pattern = {
+            'tag': btn.name,
+            'classes': btn.get('class', []),
+            'text': btn.get_text(strip=True),
+            'styles': extract_inline_styles(btn),
+            'size': detect_button_size(btn),
+            'variant': detect_button_variant(btn)
+        }
+        patterns.append(pattern)
+    
+    return patterns
+
+def detect_button_size(button) -> str:
+    """Detect button size from classes or styles"""
+    classes = button.get('class', [])
+    styles = button.get('style', '')
+    
+    if any('lg' in cls.lower() for cls in classes) or 'large' in styles:
+        return 'large'
+    elif any('sm' in cls.lower() for cls in classes) or 'small' in styles:
+        return 'small'
+    else:
+        return 'medium'
+
+def detect_button_variant(button) -> str:
+    """Detect button variant from classes or styles"""
+    classes = button.get('class', [])
+    
+    if any('primary' in cls.lower() for cls in classes):
+        return 'primary'
+    elif any('secondary' in cls.lower() for cls in classes):
+        return 'secondary'
+    elif any('outline' in cls.lower() for cls in classes):
+        return 'outline'
+    else:
+        return 'default'
+
+def extract_form_patterns(soup: BeautifulSoup) -> List[Dict[str, any]]:
+    """Extract form design patterns"""
+    forms = soup.find_all('form')
+    patterns = []
+    
+    for form in forms[:5]:
+        pattern = {
+            'classes': form.get('class', []),
+            'inputs': len(form.find_all('input')),
+            'labels': len(form.find_all('label')),
+            'layout': detect_form_layout(form)
+        }
+        patterns.append(pattern)
+    
+    return patterns
+
+def detect_form_layout(form) -> str:
+    """Detect form layout type"""
+    inputs = form.find_all('input')
+    labels = form.find_all('label')
+    
+    if len(inputs) == len(labels):
+        return 'labeled'
+    elif len(inputs) > 1:
+        return 'multi-input'
+    else:
+        return 'simple'
+
+def extract_navigation_patterns(soup: BeautifulSoup) -> List[Dict[str, any]]:
+    """Extract navigation design patterns"""
+    navs = soup.find_all(['nav', 'ul'], class_=re.compile(r'nav|menu'))
+    patterns = []
+    
+    for nav in navs[:5]:
+        items = nav.find_all('a')
+        pattern = {
+            'type': 'horizontal' if len(items) <= 5 else 'vertical',
+            'item_count': len(items),
+            'classes': nav.get('class', []),
+            'has_dropdown': bool(nav.find_all(class_=re.compile(r'dropdown|menu')))
+        }
+        patterns.append(pattern)
+    
+    return patterns
+
+def extract_card_patterns(soup: BeautifulSoup) -> List[Dict[str, any]]:
+    """Extract card design patterns"""
+    cards = soup.find_all(['div', 'article'], class_=re.compile(r'card|tile|box'))
+    patterns = []
+    
+    for card in cards[:5]:
+        pattern = {
+            'classes': card.get('class', []),
+            'has_image': bool(card.find('img')),
+            'has_title': bool(card.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])),
+            'has_button': bool(card.find(['button', 'a'])),
+            'layout': detect_card_layout(card)
+        }
+        patterns.append(pattern)
+    
+    return patterns
+
+def detect_card_layout(card) -> str:
+    """Detect card layout type"""
+    has_image = bool(card.find('img'))
+    has_title = bool(card.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']))
+    
+    if has_image and has_title:
+        return 'image-title-content'
+    elif has_image:
+        return 'image-content'
+    elif has_title:
+        return 'title-content'
+    else:
+        return 'content-only'
+
+def extract_visual_hierarchy(soup: BeautifulSoup) -> Dict[str, any]:
+    """Extract visual hierarchy information"""
+    hierarchy = {
+        'headings': extract_heading_hierarchy(soup),
+        'text_sizes': extract_text_size_patterns(soup),
+        'emphasis': extract_emphasis_patterns(soup)
+    }
+    
+    return hierarchy
+
+def extract_heading_hierarchy(soup: BeautifulSoup) -> Dict[str, int]:
+    """Extract heading hierarchy and counts"""
+    headings = {}
+    for i in range(1, 7):
+        count = len(soup.find_all(f'h{i}'))
+        if count > 0:
+            headings[f'h{i}'] = count
+    
+    return headings
+
+def extract_text_size_patterns(soup: BeautifulSoup) -> List[str]:
+    """Extract text size patterns from CSS classes"""
+    sizes = []
+    
+    # Common text size patterns
+    size_patterns = ['text-', 'fs-', 'font-size-']
+    for pattern in size_patterns:
+        elements = soup.find_all(class_=re.compile(pattern))
+        for element in elements:
+            classes = element.get('class', [])
+            for cls in classes:
+                if pattern in cls:
+                    match = re.search(rf'{pattern}([a-z0-9-]+)', cls)
+                    if match:
+                        sizes.append(match.group(1))
+    
+    return list(set(sizes))
+
+def extract_emphasis_patterns(soup: BeautifulSoup) -> List[str]:
+    """Extract emphasis patterns (bold, italic, etc.)"""
+    emphasis = []
+    
+    # Bold text
+    bold_elements = soup.find_all(['strong', 'b'])
+    if bold_elements:
+        emphasis.append('bold')
+    
+    # Italic text
+    italic_elements = soup.find_all(['em', 'i'])
+    if italic_elements:
+        emphasis.append('italic')
+    
+    # Underlined text
+    underlined_elements = soup.find_all('u')
+    if underlined_elements:
+        emphasis.append('underlined')
+    
+    return emphasis
+
+def extract_responsive_breakpoints(soup: BeautifulSoup) -> List[str]:
+    """Extract responsive breakpoint patterns"""
+    breakpoints = []
+    
+    # Common breakpoint patterns
+    breakpoint_patterns = ['sm:', 'md:', 'lg:', 'xl:', '2xl:']
+    
+    for element in soup.find_all(class_=True):
+        classes = element.get('class', [])
+        for cls in classes:
+            for pattern in breakpoint_patterns:
+                if pattern in cls:
+                    breakpoints.append(pattern.rstrip(':'))
+    
+    return list(set(breakpoints))
+
+def extract_interaction_patterns(soup: BeautifulSoup) -> List[Dict[str, any]]:
+    """Extract interaction patterns and behaviors"""
+    interactions = []
+    
+    # Hover effects
+    hover_elements = soup.find_all(class_=re.compile(r'hover|hover:'))
+    if hover_elements:
+        interactions.append({
+            'type': 'hover',
+            'count': len(hover_elements),
+            'examples': [el.get('class', [])[0] for el in hover_elements[:3]]
+        })
+    
+    # Click handlers
+    click_elements = soup.find_all(onclick=True)
+    if click_elements:
+        interactions.append({
+            'type': 'click',
+            'count': len(click_elements),
+            'examples': [el.name for el in click_elements[:3]]
+        })
+    
+    # Form interactions
+    form_elements = soup.find_all(['input', 'select', 'textarea'])
+    if form_elements:
+        interactions.append({
+            'type': 'form',
+            'count': len(form_elements),
+            'examples': [el.name for el in form_elements[:3]]
+        })
+    
+    return interactions
+
+def capture_page_screenshot(url: str, output_path: str) -> bool:
+    """Capture a full-page screenshot using Playwright"""
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page(viewport={'width': 1920, 'height': 1080})
+            page.goto(url, wait_until='networkidle')
+            
+            # Capture full page screenshot
+            screenshot = page.screenshot(full_page=True)
+            
+            with open(output_path, 'wb') as f:
+                f.write(screenshot)
+            
+            browser.close()
+            return True
+    except Exception as e:
+        print(f"Error capturing screenshot: {e}")
+        return False
+
+def extract_css_structure(html: str, base_url: str) -> Dict[str, any]:
+    """Extract CSS structure and organization"""
+    soup = BeautifulSoup(html, 'html.parser')
+    
+    css_structure = {
+        'inline_styles': extract_inline_css(soup),
+        'css_classes': extract_css_classes(soup),
+        'css_variables': extract_css_variables(soup),
+        'media_queries': extract_media_queries(soup)
+    }
+    
+    return css_structure
+
+def extract_inline_css(soup: BeautifulSoup) -> Dict[str, int]:
+    """Extract inline CSS usage patterns"""
+    inline_styles = {}
+    
+    for element in soup.find_all(style=True):
+        style = element.get('style', '')
+        properties = re.findall(r'([a-zA-Z-]+):\s*([^;]+)', style)
+        
+        for prop, value in properties:
+            if prop in inline_styles:
+                inline_styles[prop] += 1
+            else:
+                inline_styles[prop] = 1
+    
+    return inline_styles
+
+def extract_css_classes(soup: BeautifulSoup) -> Dict[str, int]:
+    """Extract CSS class usage patterns"""
+    class_usage = {}
+    
+    for element in soup.find_all(class_=True):
+        classes = element.get('class', [])
+        for cls in classes:
+            if cls in class_usage:
+                class_usage[cls] += 1
+            else:
+                class_usage[cls] = 1
+    
+    return class_usage
+
+def extract_css_variables(soup: BeautifulSoup) -> List[str]:
+    """Extract CSS custom properties (variables)"""
+    variables = []
+    
+    for element in soup.find_all('style'):
+        content = element.get_text()
+        var_matches = re.findall(r'--([a-zA-Z-]+):\s*([^;]+)', content)
+        variables.extend([f"--{var}" for var, value in var_matches])
+    
+    return variables
+
+def extract_media_queries(soup: BeautifulSoup) -> List[str]:
+    """Extract media query breakpoints"""
+    breakpoints = []
+    
+    for element in soup.find_all('style'):
+        content = element.get_text()
+        media_matches = re.findall(r'@media\s+\(([^)]+)\)', content)
+        breakpoints.extend(media_matches)
+    
+    return breakpoints 

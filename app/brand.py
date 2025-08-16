@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import json
 import os
 import re
@@ -26,6 +26,87 @@ class DesignAdvisor(BaseModel):
     radius: Dict[str, int] = Field(default_factory=lambda: {"sm": 8, "md": 14, "lg": 22})
     hero_brief: Optional[str] = None
 
+class LayoutElement(BaseModel):
+    """Represents a layout element with its properties"""
+    tag: str
+    classes: List[str] = Field(default_factory=list)
+    id: Optional[str] = None
+    text_content: str = ""
+    position: Dict[str, int] = Field(default_factory=lambda: {"x": 0, "y": 0, "width": 0, "height": 0})
+    styles: Dict[str, str] = Field(default_factory=dict)
+    children_count: int = 0
+    is_visible: bool = True
+
+class DesignPattern(BaseModel):
+    """Represents a design pattern found on the page"""
+    type: str  # 'grid', 'card', 'hero', 'navigation', 'footer', 'sidebar'
+    elements: List[LayoutElement] = Field(default_factory=list)
+    layout_type: str = "block"  # 'horizontal', 'vertical', 'grid', 'flexbox'
+    spacing: Dict[str, int] = Field(default_factory=dict)
+    alignment: str = "left"  # 'left', 'center', 'right', 'justify'
+
+class PageStructure(BaseModel):
+    """Represents the overall page structure"""
+    header: Optional[Dict[str, Any]] = None
+    hero: Optional[Dict[str, Any]] = None
+    content: Optional[Dict[str, Any]] = None
+    sidebar: Optional[Dict[str, Any]] = None
+    footer: Optional[Dict[str, Any]] = None
+    sections: List[Dict[str, Any]] = Field(default_factory=list)
+
+class SpacingSystem(BaseModel):
+    """Represents the spacing system used on the page"""
+    margins: List[str] = Field(default_factory=list)
+    padding: List[str] = Field(default_factory=list)
+    gaps: List[str] = Field(default_factory=list)
+    common_values: List[str] = Field(default_factory=list)
+
+class LayoutGrid(BaseModel):
+    """Represents grid layout information"""
+    grid_systems: List[Dict[str, Any]] = Field(default_factory=list)
+    column_patterns: List[Dict[str, Any]] = Field(default_factory=list)
+    breakpoints: List[str] = Field(default_factory=list)
+
+class ComponentPatterns(BaseModel):
+    """Represents common component patterns"""
+    buttons: List[Dict[str, Any]] = Field(default_factory=list)
+    forms: List[Dict[str, Any]] = Field(default_factory=list)
+    navigation: List[Dict[str, Any]] = Field(default_factory=list)
+    cards: List[Dict[str, Any]] = Field(default_factory=list)
+
+class VisualHierarchy(BaseModel):
+    """Represents visual hierarchy information"""
+    headings: Dict[str, int] = Field(default_factory=dict)
+    text_sizes: List[str] = Field(default_factory=list)
+    emphasis: List[str] = Field(default_factory=list)
+
+class InteractionPatterns(BaseModel):
+    """Represents interaction patterns and behaviors"""
+    hover_effects: List[Dict[str, Any]] = Field(default_factory=list)
+    click_handlers: List[Dict[str, Any]] = Field(default_factory=list)
+    form_interactions: List[Dict[str, Any]] = Field(default_factory=list)
+
+class CSSStructure(BaseModel):
+    """Represents CSS structure and organization"""
+    inline_styles: Dict[str, int] = Field(default_factory=dict)
+    css_classes: Dict[str, int] = Field(default_factory=dict)
+    css_variables: List[str] = Field(default_factory=list)
+    media_queries: List[str] = Field(default_factory=list)
+
+class UILayoutData(BaseModel):
+    """Comprehensive UI and layout data extracted from the brand"""
+    page_structure: PageStructure = PageStructure()
+    design_patterns: List[DesignPattern] = Field(default_factory=list)
+    spacing_system: SpacingSystem = SpacingSystem()
+    layout_grid: LayoutGrid = LayoutGrid()
+    component_patterns: ComponentPatterns = ComponentPatterns()
+    visual_hierarchy: VisualHierarchy = VisualHierarchy()
+    responsive_breakpoints: List[str] = Field(default_factory=list)
+    interaction_patterns: InteractionPatterns = InteractionPatterns()
+    css_structure: CSSStructure = CSSStructure()
+    screenshot_path: Optional[str] = None
+    layout_analysis: Dict[str, Any] = Field(default_factory=dict)
+
 class BrandIdentity(BaseModel):
     slug: str
     name: str
@@ -42,6 +123,7 @@ class BrandIdentity(BaseModel):
     logo_path_public: Optional[str] = None
     images: List[str] = Field(default_factory=list)
     source_notes: Optional[str] = None
+    ui_layout: UILayoutData = UILayoutData()  # New field for UI/layout data
 
 def sanitize_slug(slug: str) -> str:
     """Convert slug to safe filename"""

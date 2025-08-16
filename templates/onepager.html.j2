@@ -59,126 +59,99 @@
 
   <!-- Dynamic Content Sections - From user inputs or generated outline -->
   {% if outline and outline.sections %}
-    {% for section in outline.sections %}
+    {% for outline_section in outline.sections %}
       <section class="section">
-        <h2 class="section-title">{{ section.title }}</h2>
-        {% if section.bullets %}
+        <h2 class="section-title">{{ outline_section.title }}</h2>
+        
+        <!-- Use brand's UI patterns to determine layout -->
+        {% set section_layout = outline_section.layout_style or 'default' %}
+        {% set content_type = outline_section.content_type or 'general' %}
+        
+        {% if section_layout == 'card' or content_type in ['solution', 'benefits'] %}
+          <!-- Card-based layout for solutions and benefits -->
           <div class="card">
-            <ul class="space-y-2">
-              {% for bullet in section.bullets %}
-                <li class="flex items-start gap-3">
-                  <span class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></span>
-                  <span>{{ bullet }}</span>
-                </li>
+            {% if outline_section.bullets and outline_section.bullets|length > 0 %}
+              <ul class="space-y-2">
+                {% for bullet in outline_section.bullets %}
+                  <li class="flex items-start gap-3">
+                    <span class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></span>
+                    <span>{{ bullet }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            {% if outline_section.content %}
+              <p>{{ outline_section.content }}</p>
+            {% endif %}
+          </div>
+        {% elif section_layout == 'grid' or content_type in ['features', 'metrics'] %}
+          <!-- Grid layout for features and metrics -->
+          {% if outline_section.bullets and outline_section.bullets|length > 0 %}
+            <div class="grid grid-cols-{{ outline_section.bullets|length if outline_section.bullets|length <= 4 else 4 }} gap-6">
+              {% for bullet in outline_section.bullets %}
+                <div class="card text-center">
+                  <div class="text-3xl font-bold text-brand-primary mb-2">{{ bullet }}</div>
+                  <div class="text-brand-muted text-sm">Feature {{ loop.index }}</div>
+                </div>
               {% endfor %}
-            </ul>
-          </div>
-        {% endif %}
-        {% if section.content %}
-          <div class="card">
-            <p>{{ section.content }}</p>
-          </div>
+            </div>
+          {% elif outline_section.items and outline_section.items|length > 0 %}
+            <!-- Grid layout for custom items -->
+            <div class="grid grid-cols-{{ outline_section.columns or 3 }} gap-6">
+              {% for item in outline_section.items %}
+                <div class="card text-center">
+                  {% if item.icon %}
+                    <div class="text-4xl mb-4">{{ item.icon }}</div>
+                  {% endif %}
+                  {% if item.title %}
+                    <h3 class="text-xl font-semibold text-brand-primary mb-2">{{ item.title }}</h3>
+                  {% endif %}
+                  {% if item.value %}
+                    <div class="text-3xl font-bold text-brand-secondary mb-2">{{ item.value }}</div>
+                  {% endif %}
+                  {% if item.description %}
+                    <p class="text-brand-muted">{{ item.description }}</p>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% elif section_layout == 'list' or content_type in ['differentiation', 'steps'] %}
+          <!-- List layout for differentiation and steps -->
+          {% if outline_section.bullets and outline_section.bullets|length > 0 %}
+            <div class="space-y-4">
+              {% for bullet in outline_section.bullets %}
+                <div class="flex items-start gap-4 p-4 bg-brand-muted bg-opacity-10 rounded-lg">
+                  <div class="w-6 h-6 bg-brand-accent text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    {{ loop.index }}
+                  </div>
+                  <div>{{ bullet }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% else %}
+          <!-- Default layout -->
+          {% if outline_section.bullets and outline_section.bullets|length > 0 %}
+            <div class="card">
+              <ul class="space-y-2">
+                {% for bullet in outline_section.bullets %}
+                  <li class="flex items-start gap-3">
+                    <span class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></span>
+                    <span>{{ bullet }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+          {% if outline_section.content %}
+            <div class="card">
+              <p>{{ outline_section.content }}</p>
+            </div>
+          {% endif %}
         {% endif %}
       </section>
     {% endfor %}
-  {% endif %}
-
-  <!-- Custom Content Sections - From user inputs -->
-  {% if custom_data.sections %}
-    {% for section in custom_data.sections %}
-      <section class="section">
-        <h2 class="section-title">{{ section.title }}</h2>
-        {% if section.type == 'bullets' and section.bullets %}
-          <div class="card">
-            <ul class="space-y-2">
-              {% for bullet in section.bullets %}
-                <li class="flex items-start gap-3">
-                  <span class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></span>
-                  <span>{{ bullet }}</span>
-                </li>
-              {% endfor %}
-            </ul>
-          </div>
-        {% elif section.type == 'grid' and section.items %}
-          <div class="grid grid-cols-{{ section.columns or 3 }} gap-6">
-            {% for item in section.items %}
-              <div class="card text-center">
-                {% if item.icon %}
-                  <div class="text-4xl mb-4">{{ item.icon }}</div>
-                {% endif %}
-                {% if item.title %}
-                  <h3 class="text-xl font-semibold text-brand-primary mb-2">{{ item.title }}</h3>
-                {% endif %}
-                {% if item.value %}
-                  <div class="text-3xl font-bold text-brand-secondary mb-2">{{ item.value }}</div>
-                {% endif %}
-                {% if item.description %}
-                  <p class="text-brand-muted">{{ item.description }}</p>
-                {% endif %}
-              </div>
-            {% endfor %}
-          </div>
-        {% elif section.type == 'text' and section.content %}
-          <div class="card">
-            <p>{{ section.content }}</p>
-          </div>
-        {% elif section.type == 'quote' and section.quote %}
-          <div class="card bg-brand-muted text-brand-bg">
-            <blockquote class="text-xl italic text-center">
-              "{{ section.quote }}"
-            </blockquote>
-            {% if section.author %}
-              <cite class="block text-center mt-4 text-sm">— {{ section.author }}</cite>
-            {% endif %}
-          </div>
-        {% endif %}
-      </section>
-    {% endfor %}
-  {% endif %}
-
-  <!-- KPI/Metrics Section - From user inputs -->
-  {% if custom_data.kpis or custom_data.metrics %}
-    <section class="section">
-      <h2 class="section-title">Key Metrics</h2>
-      <div class="grid grid-cols-{{ (custom_data.kpis or custom_data.metrics)|length if (custom_data.kpis or custom_data.metrics)|length <= 4 else 4 }} gap-6">
-        {% for kpi in (custom_data.kpis or custom_data.metrics) %}
-          <div class="card text-center">
-            {% if kpi.icon %}
-              <div class="text-4xl mb-4">{{ kpi.icon }}</div>
-            {% endif %}
-            <div class="text-4xl font-bold text-brand-primary mb-2">{{ kpi.value }}</div>
-            <div class="text-brand-muted font-medium">{{ kpi.label }}</div>
-            {% if kpi.change %}
-              <div class="text-sm mt-2">
-                <span class="{% if kpi.change.startswith('+') %}text-green-600{% else %}text-red-600{% endif %}">
-                  {{ kpi.change }}
-                </span>
-                {% if kpi.change_period %}
-                  <span class="text-brand-muted">vs {{ kpi.change_period }}</span>
-                {% endif %}
-              </div>
-            {% endif %}
-          </div>
-        {% endfor %}
-      </div>
-    </section>
-  {% endif %}
-
-  <!-- Bullet Points Section - From user inputs -->
-  {% if custom_data.bullets %}
-    <section class="section">
-      <h2 class="section-title">Key Points</h2>
-      <div class="card">
-        <ul class="space-y-3">
-          {% for bullet in custom_data.bullets %}
-            <li class="flex items-start gap-3">
-              <span class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></span>
-              <span>{{ bullet }}</span>
-            </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </section>
   {% endif %}
 
   <!-- Call to Action Section -->
@@ -187,7 +160,7 @@
       <div class="card bg-brand-primary text-white">
         <h2 class="text-2xl font-bold mb-4">Ready to Get Started?</h2>
         <p class="text-lg mb-6 opacity-90">
-          {{ custom_data.cta_text or "Take the next step towards achieving your goals." }}
+          Take the next step towards achieving your goals.
         </p>
         <a href="#" class="btn bg-white text-brand-primary hover:bg-gray-100 px-8 py-4 text-lg">
           {{ cta or outline.cta or custom_data.cta or "Get Started" }}
@@ -216,6 +189,31 @@
             </a>
           {% endif %}
         </div>
+      </div>
+    </section>
+  {% endif %}
+
+  <!-- Brand Design Patterns Showcase (if available) -->
+  {% if brand.ui_layout and brand.ui_layout.design_patterns %}
+    <section class="section">
+      <h2 class="section-title">Design Patterns</h2>
+      <div class="grid grid-cols-{{ brand.ui_layout.design_patterns|length if brand.ui_layout.design_patterns|length <= 3 else 3 }} gap-6">
+        {% for pattern in brand.ui_layout.design_patterns[:3] %}
+          <div class="card text-center">
+            <div class="text-2xl mb-2">
+              {% if pattern.type == 'grid' %}📊
+              {% elif pattern.type == 'card' %}🃏
+              {% elif pattern.type == 'hero' %}🎯
+              {% elif pattern.type == 'navigation' %}🧭
+              {% else %}✨{% endif %}
+            </div>
+            <h3 class="text-lg font-semibold text-brand-primary mb-2">{{ pattern.type|title }}</h3>
+            <p class="text-sm text-brand-muted">{{ pattern.layout_type|title }} layout</p>
+            {% if pattern.elements %}
+              <p class="text-xs text-brand-muted mt-2">{{ pattern.elements|length }} elements</p>
+            {% endif %}
+          </div>
+        {% endfor %}
       </div>
     </section>
   {% endif %}
