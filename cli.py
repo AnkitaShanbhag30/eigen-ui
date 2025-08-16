@@ -375,7 +375,8 @@ def generate(
     layout: str = typer.Option("auto", "--layout", help="Layout selection: auto, manual, or specific template ID"),
     channels: str = typer.Option("onepager", "--channels", help="Channels to generate: onepager,story,linkedin (comma-separated)"),
     variants: int = typer.Option(1, "--variants", help="Number of variants to generate when using auto-layout"),
-    brief: str = typer.Option("", "--brief", help="Brief file path for automatic channel/deliverable detection")
+    brief: str = typer.Option("", "--brief", help="Brief file path for automatic channel/deliverable detection"),
+    force_html: bool = typer.Option(False, "--force-html", help="Force HTML generation instead of Dyad SSR")
 ):
     """Generate content using brand identity and template with multiple export formats"""
     typer.echo(f"Generating content for brand {slug}...")
@@ -434,7 +435,7 @@ def generate(
                 
                 # Generate content using existing system
                 from app.generate import generate_assets
-                result = generate_assets(slug, brand.model_dump(), channel, x, y, z, w, cta, hero)
+                result = generate_assets(slug, brand.model_dump(), channel, x, y, z, w, cta, hero, force_html)
                 
                 # Store results
                 all_results[channel] = {
@@ -868,7 +869,8 @@ def ai_generate(
     cta: str = typer.Option("", "--cta", help="Call to action"),
     output_dir: str = typer.Option("", "--output", help="Output directory (optional)"),
     save_template: bool = typer.Option(False, "--save-template", help="Save the generated template for reuse"),
-    show_workflow: bool = typer.Option(True, "--show-workflow", help="Show detailed workflow steps")
+    show_workflow: bool = typer.Option(True, "--show-workflow", help="Show detailed workflow steps"),
+    force_html: bool = typer.Option(False, "--force-html", help="Force HTML generation instead of Dyad SSR")
 ):
     """Generate content using AI-powered LLM orchestration (creates content, images, and templates)"""
     typer.echo(f"🤖 AI-Powered Content Generation for {channel} channel...")
@@ -905,10 +907,44 @@ def ai_generate(
                 f.write(results['template_code'])
             typer.echo(f"💾 Template saved to: {template_file}")
         
-        # Save final HTML
+        # Check if Dyad templates are available and use SSR renderer
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent))
+        from renderer.resolve_templates import resolve_templates
+        import subprocess
+        
+        sel = resolve_templates(force_html=force_html)
         html_file = os.path.join(output_dir, f"{channel}_final.html")
-        with open(html_file, 'w') as f:
-            f.write(results['final_html'])
+        
+        if sel["engine"] == "react":
+            typer.echo("🎨 Using Dyad React SSR renderer...")
+            entry = sel["entry"]
+            # Ensure brand json exists at data/brands/{slug}.json
+            brand_json_path = f"data/brands/{slug}.json"
+            if not os.path.exists(brand_json_path):
+                # Create brand json if it doesn't exist
+                with open(brand_json_path, 'w') as f:
+                    json.dump(brand.model_dump(), f, indent=2, default=str)
+                typer.echo(f"💾 Created brand config: {brand_json_path}")
+            
+            try:
+                subprocess.run([
+                    "pnpm", "ssr",
+                    "--brand", slug,
+                    "--entry", entry,
+                    "--out", html_file,
+                    "--props", brand_json_path
+                ], check=True)
+                typer.echo(f"✅ SSR rendered to: {html_file}")
+            except subprocess.CalledProcessError as e:
+                typer.echo(f"⚠️ SSR renderer failed, falling back to HTML: {e}")
+                with open(html_file, 'w') as f:
+                    f.write(results['final_html'])
+        else:
+            # Use existing HTML writer
+            with open(html_file, 'w') as f:
+                f.write(results['final_html'])
         
         # Show results summary
         typer.echo(f"\n🎉 AI Generation Complete!")
@@ -951,7 +987,8 @@ def ai_workflow(
     z: str = typer.Option(..., "--z", help="Target audience"),
     cta: str = typer.Option("", "--cta", help="Call to action"),
     save_templates: bool = typer.Option(True, "--save-templates", help="Save generated templates"),
-    parallel: bool = typer.Option(False, "--parallel", help="Run channels in parallel (experimental)")
+    parallel: bool = typer.Option(False, "--parallel", help="Run channels in parallel (experimental)"),
+    force_html: bool = typer.Option(False, "--force-html", help="Force HTML generation instead of Dyad SSR")
 ):
     """Generate content across multiple channels using AI orchestration"""
     typer.echo(f"🚀 Multi-Channel AI Workflow for {slug}...")

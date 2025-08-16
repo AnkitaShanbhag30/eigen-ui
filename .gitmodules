@@ -1,0 +1,3 @@
+[submodule "tools/dyad"]
+	path = tools/dyad
+	url = https://github.com/dyad-sh/dyad

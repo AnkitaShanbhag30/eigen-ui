@@ -179,7 +179,7 @@ def zip_outputs(paths, out_zip):
         for p in paths:
             if p and os.path.exists(p): z.write(p, arcname=os.path.basename(p))
 
-def generate_assets(slug: str, brand: Dict, template: str, x:str,y:str,z:str,w:str,cta:str, hero_mode:str="skip"):
+def generate_assets(slug: str, brand: Dict, template: str, x:str,y:str,z:str,w:str,cta:str, hero_mode:str="skip", force_html:bool=False):
     ts = int(time.time())
     drafts_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "drafts", slug))
     assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "assets", slug))
@@ -218,7 +218,49 @@ def generate_assets(slug: str, brand: Dict, template: str, x:str,y:str,z:str,w:s
 
     html = render_html(template, brand, tokens, outline, hero_url)
     html_path = os.path.join(drafts_dir, f"{slug}-{template}-{ts}.html")
-    with open(html_path, "w", encoding="utf-8") as f: f.write(html)
+    
+    # Check if Dyad templates are available and use SSR renderer
+    try:
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from renderer.resolve_templates import resolve_templates
+        import subprocess
+        
+        sel = resolve_templates()
+        
+        if sel["engine"] == "react" and not force_html:
+            print("🎨 Using Dyad React SSR renderer...")
+            entry = sel["entry"]
+            # Ensure brand json exists at data/brands/{slug}.json
+            brand_json_path = f"data/brands/{slug}.json"
+            if not os.path.exists(brand_json_path):
+                # Create brand json if it doesn't exist
+                with open(brand_json_path, 'w') as f:
+                    json.dump(brand, f, indent=2, default=str)
+                print(f"💾 Created brand config: {brand_json_path}")
+            
+            try:
+                subprocess.run([
+                    "pnpm", "ssr",
+                    "--brand", slug,
+                    "--entry", entry,
+                    "--out", html_path,
+                    "--props", brand_json_path
+                ], check=True)
+                print(f"✅ SSR rendered to: {html_path}")
+            except subprocess.CalledProcessError as e:
+                print(f"⚠️ SSR renderer failed, falling back to HTML: {e}")
+                with open(html_path, "w", encoding="utf-8") as f: 
+                    f.write(html)
+        else:
+            # Use existing HTML writer
+            with open(html_path, "w", encoding="utf-8") as f: 
+                f.write(html)
+    except Exception as e:
+        print(f"⚠️ SSR integration failed, falling back to HTML: {e}")
+        with open(html_path, "w", encoding="utf-8") as f: 
+            f.write(html)
 
     pdf_path = os.path.join(drafts_dir, f"{slug}-{template}-{ts}.pdf")
     pdf_ok = write_pdf(html, pdf_path)
