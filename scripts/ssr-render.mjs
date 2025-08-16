@@ -15,6 +15,14 @@ const entry = args.get("entry") || "data/templates/_active/index.tsx";
 const out   = args.get("out")   || `data/drafts/${brand}/${brand}-dyad.html`;
 const propsPath = args.get("props") || `data/brands/${brand}.json`;
 
+// User requirements for dynamic content
+const userRequirements = {
+  x: args.get("x") || null,
+  y: args.get("y") || null,
+  z: args.get("z") || null,
+  cta: args.get("cta") || null
+};
+
 // ensure out dir
 mkdirSync(path.dirname(out), { recursive: true });
 
@@ -63,7 +71,10 @@ const props = JSON.parse(readFileSync(propsPath, "utf-8"));
 // SSR
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-const html = "<!doctype html>" + renderToStaticMarkup(React.createElement(Page, { data: props }));
+const html = "<!doctype html>" + renderToStaticMarkup(React.createElement(Page, { 
+  data: props, 
+  userRequirements: userRequirements 
+}));
 
 writeFileSync(out, html, "utf-8");
 console.log("[ssr] wrote", out);

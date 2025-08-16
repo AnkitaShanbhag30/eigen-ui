@@ -220,6 +220,7 @@ def generate_assets(slug: str, brand: Dict, template: str, x:str,y:str,z:str,w:s
     html_path = os.path.join(drafts_dir, f"{slug}-{template}-{ts}.html")
     
     # Check if Dyad templates are available and use SSR renderer
+    html_for_pdf = html  # Default to original HTML
     try:
         import sys
         from pathlib import Path
@@ -241,18 +242,33 @@ def generate_assets(slug: str, brand: Dict, template: str, x:str,y:str,z:str,w:s
                 print(f"💾 Created brand config: {brand_json_path}")
             
             try:
-                subprocess.run([
+                # Pass user requirements to SSR renderer
+                cmd = [
                     "pnpm", "ssr",
                     "--brand", slug,
                     "--entry", entry,
                     "--out", html_path,
                     "--props", brand_json_path
-                ], check=True)
+                ]
+                
+                # Add user requirements if available
+                if x: cmd.extend(["--x", x])
+                if y: cmd.extend(["--y", y])
+                if z: cmd.extend(["--z", z])
+                if w: cmd.extend(["--w", w])
+                if cta: cmd.extend(["--cta", cta])
+                
+                subprocess.run(cmd, check=True)
                 print(f"✅ SSR rendered to: {html_path}")
+                
+                # Read the generated HTML for PDF conversion
+                with open(html_path, "r", encoding="utf-8") as f:
+                    html_for_pdf = f.read()
             except subprocess.CalledProcessError as e:
                 print(f"⚠️ SSR renderer failed, falling back to HTML: {e}")
                 with open(html_path, "w", encoding="utf-8") as f: 
                     f.write(html)
+                html_for_pdf = html
         else:
             # Use existing HTML writer
             with open(html_path, "w", encoding="utf-8") as f: 
@@ -263,7 +279,7 @@ def generate_assets(slug: str, brand: Dict, template: str, x:str,y:str,z:str,w:s
             f.write(html)
 
     pdf_path = os.path.join(drafts_dir, f"{slug}-{template}-{ts}.pdf")
-    pdf_ok = write_pdf(html, pdf_path)
+    pdf_ok = write_pdf(html_for_pdf, pdf_path)
     if not pdf_ok: pdf_path = None
 
     docx_path = os.path.join(drafts_dir, f"{slug}-{template}-{ts}.docx")
