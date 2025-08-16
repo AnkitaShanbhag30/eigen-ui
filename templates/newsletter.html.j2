@@ -1,0 +1,45 @@
+{% extends "base.html.j2" %}
+
+{% block content %}
+<div class="section">
+    {% if not hero_path %}
+        <div class="text-center mb-8">
+            <h1>{{ outline.headline }}</h1>
+            {% if outline.subhead %}
+                <h2 class="text-muted">{{ outline.subhead }}</h2>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <div class="card mb-6">
+        <h3>In This Issue</h3>
+        <ul>
+            {% for section in outline.sections %}
+                <li><strong>{{ section.title }}</strong></li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    {% for section in outline.sections %}
+        <div class="card mb-6">
+            <h3>{{ section.title }}</h3>
+            <ul>
+                {% for bullet in section.bullets %}
+                    <li>{{ bullet }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="section text-center">
+    <div class="card">
+        <h2>Stay Connected</h2>
+        <p class="mb-4">Don't miss out on the latest updates and insights.</p>
+        <div class="grid grid-2">
+            <a href="#" class="btn btn-primary">Subscribe</a>
+            <a href="#" class="btn btn-secondary">Share</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

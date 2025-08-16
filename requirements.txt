@@ -1,0 +1,16 @@
+flask
+typer[all]
+requests
+beautifulsoup4
+lxml
+Pillow
+colorthief
+Jinja2
+weasyprint
+markdown-it-py
+pydantic
+python-dotenv
+openai
+google-generativeai
+pdfminer.six
+python-docx 

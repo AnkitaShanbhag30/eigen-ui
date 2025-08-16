@@ -1,0 +1,13 @@
+# {{ outline.headline }}
+{% if outline.subhead %}_{{ outline.subhead }}_{% endif %}
+
+{% for s in outline.sections -%}
+## {{ s.title }}
+{% for b in s.bullets -%}
+- {{ b }}
+{% endfor %}
+
+{% endfor -%}
+**Call to action:** {{ outline.cta }}
+---
+{{ brand.name }} · {{ brand.website }} 
