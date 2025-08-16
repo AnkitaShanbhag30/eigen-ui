@@ -214,7 +214,7 @@ def ingest(url: str, slug: str):
         save_path = save_brand(brand, slug)
         
         typer.echo(f"✅ Brand '{slug}' saved to {save_path}")
-        typer.echo(f"📊 Total data points captured: {len(brand.dict())}")
+        typer.echo(f"📊 Total data points captured: {len(brand.model_dump())}")
         
         # Show UI/Layout analysis summary
         typer.echo("\n🎨 UI/Layout Analysis Summary:")
