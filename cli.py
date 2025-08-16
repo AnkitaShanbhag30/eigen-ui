@@ -7,6 +7,7 @@ import typer
 import os
 import sys
 from pathlib import Path
+import json
 
 # Load environment variables FIRST, before any other imports
 from dotenv import load_dotenv
@@ -852,6 +853,251 @@ def show_theme(
         typer.echo(f"   • Use '--variants 3' to see different color variations")
         typer.echo(f"   • All colors are WCAG AA compliant")
         typer.echo(f"   • Colors automatically adapt to your brand")
+        
+    except Exception as e:
+        typer.echo(f"❌ Error: {e}", err=True)
+        raise typer.Exit(1)
+
+@app.command()
+def ai_generate(
+    slug: str = typer.Argument(..., help="Brand slug"),
+    channel: str = typer.Option("onepager", "--channel", help="Channel: onepager, story, or linkedin"),
+    x: str = typer.Option(..., "--x", help="What we're building"),
+    y: str = typer.Option(..., "--y", help="Why it matters"),
+    z: str = typer.Option(..., "--z", help="Target audience"),
+    cta: str = typer.Option("", "--cta", help="Call to action"),
+    output_dir: str = typer.Option("", "--output", help="Output directory (optional)"),
+    save_template: bool = typer.Option(False, "--save-template", help="Save the generated template for reuse"),
+    show_workflow: bool = typer.Option(True, "--show-workflow", help="Show detailed workflow steps")
+):
+    """Generate content using AI-powered LLM orchestration (creates content, images, and templates)"""
+    typer.echo(f"🤖 AI-Powered Content Generation for {channel} channel...")
+    
+    try:
+        # Check if brand exists
+        brand = load_brand(slug)
+        if not brand:
+            typer.echo(f"❌ Brand {slug} not found", err=True)
+            raise typer.Exit(1)
+        
+        # Set output directory
+        if not output_dir:
+            output_dir = os.path.join("data", "drafts", slug, "ai_generated")
+        
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Import and initialize LLM orchestrator
+        from app.llm_orchestrator import LLMOrchestrator
+        orchestrator = LLMOrchestrator()
+        
+        # Execute full AI workflow
+        results = orchestrator.execute_full_workflow(brand.model_dump(), channel, x, y, z, cta, output_dir)
+        
+        # Save results
+        results_file = os.path.join(output_dir, f"{channel}_workflow_results.json")
+        with open(results_file, 'w') as f:
+            json.dump(results, f, indent=2, default=str)
+        
+        # Save generated template if requested
+        if save_template:
+            template_file = os.path.join(output_dir, f"{channel}_generated_template.html.j2")
+            with open(template_file, 'w') as f:
+                f.write(results['template_code'])
+            typer.echo(f"💾 Template saved to: {template_file}")
+        
+        # Save final HTML
+        html_file = os.path.join(output_dir, f"{channel}_final.html")
+        with open(html_file, 'w') as f:
+            f.write(results['final_html'])
+        
+        # Show results summary
+        typer.echo(f"\n🎉 AI Generation Complete!")
+        typer.echo(f"📁 Output Directory: {output_dir}")
+        typer.echo(f"📄 Final HTML: {html_file}")
+        typer.echo(f"📊 Workflow Results: {results_file}")
+        
+        if results.get('hero_image_path'):
+            typer.echo(f"🖼️ Hero Image: {results['hero_image_path']}")
+        
+        # Show workflow details if requested
+        if show_workflow:
+            typer.echo(f"\n🔍 Workflow Summary:")
+            typer.echo(f"   ⏱️ Total Duration: {results['workflow_duration']:.1f}s")
+            typer.echo(f"   📋 Strategy Generated: ✅")
+            typer.echo(f"   📝 Outline Generated: ✅")
+            typer.echo(f"   🎨 Template Generated: ✅")
+            typer.echo(f"   🖼️ Image Prompt: {results['image_prompt'][:50]}...")
+            typer.echo(f"   🔨 Final HTML: {len(results['final_html'])} characters")
+        
+        # Show content preview
+        typer.echo(f"\n📝 Generated Content:")
+        typer.echo(f"   Headline: {results['outline'].get('headline', 'N/A')}")
+        typer.echo(f"   Subheadline: {results['outline'].get('subheadline', 'N/A')}")
+        typer.echo(f"   Sections: {len(results['outline'].get('sections', []))}")
+        typer.echo(f"   CTA: {results['outline'].get('cta', 'N/A')}")
+        
+        return results
+        
+    except Exception as e:
+        typer.echo(f"❌ Error: {e}", err=True)
+        raise typer.Exit(1)
+
+@app.command()
+def ai_workflow(
+    slug: str = typer.Argument(..., help="Brand slug"),
+    channels: str = typer.Option("onepager,story,linkedin", "--channels", help="Channels to generate (comma-separated)"),
+    x: str = typer.Option(..., "--x", help="What we're building"),
+    y: str = typer.Option(..., "--y", help="Why it matters"),
+    z: str = typer.Option(..., "--z", help="Target audience"),
+    cta: str = typer.Option("", "--cta", help="Call to action"),
+    save_templates: bool = typer.Option(True, "--save-templates", help="Save generated templates"),
+    parallel: bool = typer.Option(False, "--parallel", help="Run channels in parallel (experimental)")
+):
+    """Generate content across multiple channels using AI orchestration"""
+    typer.echo(f"🚀 Multi-Channel AI Workflow for {slug}...")
+    
+    try:
+        # Check if brand exists
+        brand = load_brand(slug)
+        if not brand:
+            typer.echo(f"❌ Brand {slug} not found", err=True)
+            raise typer.Exit(1)
+        
+        # Parse channels
+        channel_list = [ch.strip() for ch in channels.split(",")]
+        
+        # Set output directory
+        output_dir = os.path.join("data", "drafts", slug, "ai_workflow")
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Import orchestrator
+        from app.llm_orchestrator import LLMOrchestrator
+        orchestrator = LLMOrchestrator()
+        
+        all_results = {}
+        
+        if parallel:
+            # Parallel execution (experimental)
+            typer.echo("⚡ Running channels in parallel...")
+            import concurrent.futures
+            
+            def generate_channel(channel):
+                try:
+                    return channel, orchestrator.execute_full_workflow(
+                        brand.model_dump(), channel, x, y, z, cta, output_dir
+                    )
+                except Exception as e:
+                    return channel, {'error': str(e)}
+            
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                future_to_channel = {executor.submit(generate_channel, ch): ch for ch in channel_list}
+                
+                for future in concurrent.futures.as_completed(future_to_channel):
+                    channel, result = future.result()
+                    all_results[channel] = result
+                    typer.echo(f"✅ {channel} completed")
+        else:
+            # Sequential execution
+            for channel in channel_list:
+                typer.echo(f"\n📱 Generating for {channel} channel...")
+                result = orchestrator.execute_full_workflow(
+                    brand.model_dump(), channel, x, y, z, cta, output_dir
+                )
+                all_results[channel] = result
+        
+        # Save all results
+        workflow_file = os.path.join(output_dir, "complete_workflow_results.json")
+        with open(workflow_file, 'w') as f:
+            json.dump(all_results, f, indent=2, default=str)
+        
+        # Save templates if requested
+        if save_templates:
+            templates_dir = os.path.join(output_dir, "templates")
+            os.makedirs(templates_dir, exist_ok=True)
+            
+            for channel, result in all_results.items():
+                if 'template_code' in result:
+                    template_file = os.path.join(templates_dir, f"{channel}_template.html.j2")
+                    with open(template_file, 'w') as f:
+                        f.write(result['template_code'])
+                    typer.echo(f"💾 {channel} template saved")
+        
+        # Show summary
+        typer.echo(f"\n🎉 Multi-Channel AI Workflow Complete!")
+        typer.echo(f"📁 Output Directory: {output_dir}")
+        typer.echo(f"📊 Complete Results: {workflow_file}")
+        
+        if save_templates:
+            typer.echo(f"📁 Templates Directory: {templates_dir}")
+        
+        typer.echo(f"\n📈 Channel Results:")
+        for channel, result in all_results.items():
+            if 'error' in result:
+                typer.echo(f"   ❌ {channel}: {result['error']}")
+            else:
+                duration = result.get('workflow_duration', 0)
+                typer.echo(f"   ✅ {channel}: {duration:.1f}s")
+        
+        return all_results
+        
+    except Exception as e:
+        typer.echo(f"❌ Error: {e}", err=True)
+        raise typer.Exit(1)
+
+@app.command()
+def ai_template(
+    slug: str = typer.Argument(..., help="Brand slug"),
+    channel: str = typer.Option("onepager", "--channel", help="Channel: onepager, story, or linkedin"),
+    x: str = typer.Option(..., "--x", help="What we're building"),
+    y: str = typer.Option(..., "--y", help="Why it matters"),
+    z: str = typer.Option(..., "--z", help="Target audience"),
+    cta: str = typer.Option("", "--cta", help="Call to action"),
+    output_file: str = typer.Option("", "--output", help="Output file path (optional)")
+):
+    """Generate only the J2 template using AI (without full workflow)"""
+    typer.echo(f"🎨 AI Template Generation for {channel}...")
+    
+    try:
+        # Check if brand exists
+        brand = load_brand(slug)
+        if not brand:
+            typer.echo(f"❌ Brand {slug} not found", err=True)
+            raise typer.Exit(1)
+        
+        # Import orchestrator
+        from app.llm_orchestrator import LLMOrchestrator
+        orchestrator = LLMOrchestrator()
+        
+        # Generate strategy and outline first
+        strategy = orchestrator.generate_content_strategy(brand.model_dump(), channel, x, y, z, cta)
+        outline = orchestrator.generate_content_outline(strategy, brand.model_dump(), channel)
+        
+        # Generate template
+        template_code = orchestrator.generate_template_code(strategy, outline, brand.model_dump(), channel)
+        
+        # Set output file
+        if not output_file:
+            output_file = f"{slug}_{channel}_ai_template.html.j2"
+        
+        # Save template
+        with open(output_file, 'w') as f:
+            f.write(template_code)
+        
+        typer.echo(f"✅ AI Template Generated!")
+        typer.echo(f"📁 Saved to: {output_file}")
+        typer.echo(f"📏 Template Size: {len(template_code)} characters")
+        
+        # Show preview
+        typer.echo(f"\n📝 Content Preview:")
+        typer.echo(f"   Headline: {outline.get('headline', 'N/A')}")
+        typer.echo(f"   Sections: {len(outline.get('sections', []))}")
+        
+        return {
+            'template_code': template_code,
+            'outline': outline,
+            'strategy': strategy,
+            'output_file': output_file
+        }
         
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)
