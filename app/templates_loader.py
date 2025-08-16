@@ -1,6 +1,13 @@
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Environment, FileSystemLoader, Template, select_autoescape
 import os
 from typing import Dict, Any, Optional, List
+
+def get_env():
+    tpl_dir = os.path.join(os.path.dirname(__file__), "..", "templates")
+    return Environment(
+        loader=FileSystemLoader(tpl_dir),
+        autoescape=select_autoescape(["html","xml"])
+    )
 
 class TemplatesLoader:
     """Loads and manages Jinja2 templates for content generation"""

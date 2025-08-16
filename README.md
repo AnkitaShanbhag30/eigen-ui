@@ -175,9 +175,11 @@ curl -X POST http://localhost:5050/generate \
     "z": "audience Z",
     "w": "Additional context notes",
     "cta": "Get started",
-    "to_html": true
+    "hero": "auto"
   }'
 ```
+
+**Visual Export**: HTML/PDF/DOCX/ZIP files are now saved under `data/drafts/<slug>/...` and `PUBLIC_BASE_URL` enables **public URLs** for Canva import.
 
 ## Error Handling
 

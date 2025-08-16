@@ -100,4 +100,9 @@ def get_llm_provider() -> LLMProvider:
         return GeminiProvider()
     else:
         print(f"Unknown provider '{provider}', defaulting to OpenAI")
-        return OpenAIProvider() 
+        return OpenAIProvider()
+
+def generate_json(system: str, user: str) -> Dict:
+    """Convenience function to generate JSON using the default provider"""
+    provider = get_llm_provider()
+    return provider.generate_json(system, user) 

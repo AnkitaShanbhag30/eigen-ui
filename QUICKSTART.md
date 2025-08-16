@@ -70,6 +70,8 @@ export FLASK_APP=app.main:app
 flask run -p 5050
 ```
 
+**For Canva Integration**: Use a tunnel service (ngrok, localtunnel) and set `PUBLIC_BASE_URL=https://your-tunnel-url` in `.env` to make assets publicly fetchable.
+
 ## What You Get
 
 - ✅ **Brand Ingestion**: Scrape websites for brand identity

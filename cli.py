@@ -20,7 +20,6 @@ from app.scrape import fetch_html, extract_meta, find_images, find_css_links, vi
 from app.palette import download_and_extract_palette, get_default_palette
 from app.fonts import get_fonts_from_css_urls, get_default_fonts
 from app.llm import get_llm_provider
-from app.generate import ContentGenerator
 from app.design import DesignAdvisorService
 from app.imgfm import generate_hero_image
 from app.html_tokens import generate_tokens, get_google_fonts_links
@@ -272,8 +271,7 @@ def generate(
     z: str = typer.Option(..., "--z", "-z", help="Target audience"),
     w: str = typer.Option("", "--w", "-w", help="Additional context or path:./file.txt"),
     cta: str = typer.Option("", "--cta", help="Call to action"),
-    hero: str = typer.Option("auto", "--hero", help="Hero image: auto, skip, or path:./image.png"),
-    qa: bool = typer.Option(False, "--qa", help="Enable visual QA loop")
+    hero: str = typer.Option("skip", "--hero", help="Hero image: auto, skip, or path:./image.png")
 ):
     """Generate content using brand identity and template with multiple export formats"""
     typer.echo(f"Generating {template} content for brand {slug}...")
@@ -285,13 +283,9 @@ def generate(
             typer.echo(f"❌ Brand {slug} not found", err=True)
             raise typer.Exit(1)
         
-        # Generate content
-        generator = ContentGenerator()
-        result = generator.generate_content(slug, template, x, y, z, w, cta, hero, qa)
-        
-        if "error" in result:
-            typer.echo(f"❌ Error: {result['error']}", err=True)
-            raise typer.Exit(1)
+        # Generate content using new system
+        from app.generate import generate_assets
+        result = generate_assets(slug, brand.model_dump(), template, x, y, z, w, cta, hero)
         
         # Show results
         typer.echo("✅ Content generated successfully!")
@@ -300,18 +294,25 @@ def generate(
             typer.echo(f"📄 PDF: {result['paths']['pdf']}")
         if result['paths']['docx']:
             typer.echo(f"📝 DOCX: {result['paths']['docx']}")
-        if result['paths']['brand_kit']:
-            typer.echo(f"🎨 Brand Kit: {result['paths']['brand_kit']}")
-        if result['zip_path']:
-            typer.echo(f"📦 ZIP Package: {result['zip_path']}")
+        if result['paths']['zip']:
+            typer.echo(f"📦 ZIP Package: {result['paths']['zip']}")
+        
+        # Show public URLs if available
+        if any(result['public'].values()):
+            typer.echo(f"\n🌐 Public URLs (for Canva import):")
+            if result['public']['html']:
+                typer.echo(f"   HTML: {result['public']['html']}")
+            if result['public']['pdf']:
+                typer.echo(f"   PDF: {result['public']['pdf']}")
+            if result['public']['hero']:
+                typer.echo(f"   Hero: {result['public']['hero']}")
         
         # Show design tokens
         tokens = result.get('tokens', {})
         if tokens:
             typer.echo(f"\n🎨 Design Tokens:")
             typer.echo(f"   Typography: {tokens.get('font_heading', 'N/A')} + {tokens.get('font_body', 'N/A')}")
-            typer.echo(f"   Layout: Variant {tokens.get('layout_variant', 'A')}")
-            typer.echo(f"   Colors: {len(tokens.get('colors', {}).get('palette', []))} in palette")
+            typer.echo(f"   Colors: Primary {tokens.get('colors', {}).get('primary', 'N/A')}")
             typer.echo(f"   Max width: {tokens.get('max_width', 'N/A')}px")
         
         # Show outline
@@ -325,8 +326,8 @@ def generate(
             typer.echo(f"   Sections: {len(outline.get('sections', []))}")
         
         # Show hero image info
-        if result.get('hero_path'):
-            typer.echo(f"\n🖼️  Hero Image: {result['hero_path']}")
+        if result['public']['hero']:
+            typer.echo(f"\n🖼️  Hero Image: {result['public']['hero']}")
         
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)

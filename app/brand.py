@@ -39,6 +39,7 @@ class BrandIdentity(BaseModel):
     tone: str = ""
     keywords: List[str] = Field(default_factory=list)
     logo_path: Optional[str] = None
+    logo_path_public: Optional[str] = None
     images: List[str] = Field(default_factory=list)
     source_notes: Optional[str] = None
 
@@ -71,7 +72,15 @@ def load_brand(slug: str) -> Optional[BrandIdentity]:
     try:
         with open(path, 'r') as f:
             data = json.load(f)
-        return BrandIdentity(**data)
+        
+        brand = BrandIdentity(**data)
+        
+        # Compute public logo URL if logo_path exists
+        if brand.logo_path:
+            from .util import public_url
+            brand.logo_path_public = public_url(brand.logo_path)
+        
+        return brand
     except Exception as e:
         print(f"Error loading brand {slug}: {e}")
         return None

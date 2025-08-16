@@ -1,10 +1,13 @@
 import os
 import requests
 import json
+import base64
 from typing import Optional, Dict, Any
 from abc import ABC, abstractmethod
 from datetime import datetime
 from .brand import get_asset_dir, ensure_asset_dirs
+from PIL import Image
+from io import BytesIO
 
 class ImageProvider(ABC):
     """Abstract base class for image generation providers"""
@@ -265,4 +268,24 @@ def generate_hero_image(brand_slug: str, hero_brief: str, brand_keywords: list, 
             
     except Exception as e:
         print(f"Error in hero image generation: {e}")
+        return None
+
+def gen_hero_image(prompt: str, out_path: str) -> str | None:
+    provider = os.getenv("IMAGE_PROVIDER","openai")
+    if provider != "openai":
+        return None  # placeholder for other providers
+    try:
+        # Use OpenAI Images via REST (simple, avoids extra SDK surface)
+        import openai  # same package already used
+        client = openai.OpenAI()
+        res = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1600x900"
+        )
+        b64 = res.data[0].b64_json
+        img = Image.open(BytesIO(base64.b64decode(b64)))
+        img.save(out_path, format="PNG")
+        return out_path
+    except Exception:
         return None

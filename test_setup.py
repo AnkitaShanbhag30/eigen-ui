@@ -32,7 +32,7 @@ def test_imports():
         
         # Test optional modules with fallbacks
         try:
-            from app.generate import ContentGenerator, ContentOutline
+            from app.generate import generate_assets
             print("✅ Content generation modules imported successfully")
         except ImportError as e:
             if "weasyprint" in str(e):
@@ -93,19 +93,22 @@ def test_templates():
         
         print(f"✅ Templates loaded: {templates}")
         
-        # Test rendering a simple template
+        # Test rendering a simple template with new system
+        from app.html_tokens import default_tokens
+        
+        tokens = default_tokens({"primary": "#FF0000", "secondary": "#00FF00"})
         context = {
-            "brand": {"name": "Test Brand", "website": "https://test.com"},
+            "brand": {
+                "name": "Test Brand", 
+                "website": "https://test.com",
+                "typography": {"heading": "Inter", "body": "Inter"}
+            },
+            "tokens": tokens,
             "outline": {
                 "headline": "Test Headline",
                 "subhead": "Test Subhead",
                 "sections": [{"title": "Section 1", "bullets": ["Point 1", "Point 2"]}],
-                "cta": "Test CTA",
-                "meta": {  # Add the missing meta field
-                    "seoTitle": "Test SEO Title",
-                    "seoDesc": "Test SEO Description",
-                    "tags": ["test", "demo"]
-                }
+                "cta": "Test CTA"
             }
         }
         

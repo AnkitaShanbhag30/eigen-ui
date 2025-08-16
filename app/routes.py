@@ -6,7 +6,6 @@ from .scrape import fetch_html, extract_meta, find_images, find_css_links, visib
 from .palette import download_and_extract_palette, get_default_palette
 from .fonts import get_fonts_from_css_urls, get_default_fonts
 from .llm import get_llm_provider
-from .generate import ContentGenerator
 from .design import DesignAdvisorService
 from .imgfm import generate_hero_image
 import json
@@ -182,58 +181,44 @@ def upload_assets():
         return jsonify({"error": str(e)}), 500
 
 @bp.route('/generate', methods=['POST'])
-def generate_content():
+def generate():
     """Generate content using brand identity and template with multiple export formats"""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No JSON data provided"}), 400
-        
-        slug = data.get('slug')
-        template = data.get('template')
-        x = data.get('x', '')
-        y = data.get('y', '')
-        z = data.get('z', '')
-        w = data.get('w', '')
-        cta = data.get('cta', '')
-        hero = data.get('hero', 'auto')
-        qa = data.get('qa', False)
-        
-        if not all([slug, template, x, y, z]):
-            return jsonify({"error": "slug, template, x, y, and z are required"}), 400
-        
-        # Check if brand exists
+        data = request.get_json(force=True)
+        slug = data["slug"]
+        template = data.get("template","onepager")
+        x,y = data.get("x",""), data.get("y","")
+        z,w = data.get("z",""), data.get("w","")
+        cta = data.get("cta","")
+        hero = data.get("hero","skip")
+
         brand = load_brand(slug)
         if not brand:
             return jsonify({"error": f"Brand {slug} not found"}), 404
         
-        # Generate content
-        generator = ContentGenerator()
-        result = generator.generate_content(slug, template, x, y, z, w, cta, hero, qa)
+        from .generate import generate_assets
+        result = generate_assets(slug, brand, template, x,y,z,w,cta, hero_mode=hero)
         
-        if "error" in result:
-            return jsonify({"error": result["error"]}), 500
-        
-        # Return result (omit large content if too big)
-        response = {
+        # small response: paths + public URLs + outline for client placement
+        return jsonify({
+            "design": {
+                "headline": result["outline"].get("headline"),
+                "subhead": result["outline"].get("subhead"),
+                "sections": result["outline"].get("sections"),
+                "cta": result["outline"].get("cta"),
+                "brand": {
+                    "name": brand.get("name"),
+                    "website": brand.get("website"),
+                    "primary": result["tokens"]["colors"]["primary"],
+                    "secondary": result["tokens"]["colors"]["secondary"],
+                    "accent": result["tokens"]["colors"]["accent"],
+                    "logo_url": brand.get("logo_path_public"),
+                    "hero_url": result["public"]["hero"]
+                }
+            },
             "paths": result["paths"],
-            "outline": result["outline"],
-            "tokens": result["tokens"],
-            "zip_path": result["zip_path"],
-            "hero_path": result["hero_path"]
-        }
-        
-        # Include HTML content if not too large
-        if "html" in result["paths"] and result["paths"]["html"]:
-            try:
-                with open(result["paths"]["html"], 'r', encoding='utf-8') as f:
-                    html_content = f.read()
-                if len(html_content) < 50000:  # 50KB limit
-                    response["html_preview"] = html_content[:2000] + "..." if len(html_content) > 2000 else html_content
-            except Exception as e:
-                print(f"Error reading HTML for preview: {e}")
-        
-        return jsonify(response)
+            "public": result["public"]
+        })
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500

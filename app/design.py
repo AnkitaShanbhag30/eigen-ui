@@ -8,6 +8,46 @@ load_dotenv()
 
 from .llm import get_llm_provider
 from .brand import BrandIdentity, Colors, Typography, DesignAdvisor
+from .html_tokens import default_tokens
+
+DESIGN_SYS_PROMPT = """You are a senior brand designer. Given palette + detected fonts + brand adjectives,
+propose:
+- typography.heading and .body (Google Fonts or common system faces)
+- colors.primary/secondary/accent/muted (must come from provided palette or sensible neutrals)
+- spacing scale (integers in px): 4,6,8 keys only
+- radius.md (px)
+- heroBrief: a short image prompt (style+mood) consistent with tone/keywords
+Return ONLY JSON with:
+{ "typography": { "heading":"...", "body":"..." },
+  "colors": { "primary":"#....","secondary":"#....","accent":"#....","muted":"#...." },
+  "spacing": { "4": 16, "6": 24, "8": 32 },
+  "radius": { "md": 16 },
+  "heroBrief": "..." }"""
+
+def propose_design(identity: dict) -> dict:
+    palette = identity.get("colors", {}).get("palette", [])
+    fonts = identity.get("fonts_detected", []) or identity.get("fonts", [])
+    tone = identity.get("tone", "")
+    keywords = ", ".join(identity.get("keywords", [])[:12])
+    user = f"""palette: {palette}
+detected_fonts: {fonts}
+tone: {tone}
+keywords: {keywords}"""
+    out = generate_json(DESIGN_SYS_PROMPT, user)
+    # merge into identity.typography/colors and build tokens
+    identity.setdefault("typography", {})
+    identity["typography"]["heading"] = out.get("typography", {}).get("heading") or identity["typography"].get("heading") or "Inter"
+    identity["typography"]["body"] = out.get("typography", {}).get("body") or identity["typography"].get("body") or "Inter"
+    identity["colors"]["primary"] = out.get("colors", {}).get("primary") or identity["colors"].get("primary")
+    identity["colors"]["secondary"] = out.get("colors", {}).get("secondary") or identity["colors"].get("secondary")
+    identity["colors"]["accent"] = out.get("colors", {}).get("accent") or identity["colors"].get("secondary")
+    identity["colors"]["muted"] = out.get("colors", {}).get("muted") or "#EBEEF3"
+    identity["heroBrief"] = out.get("heroBrief", "")
+    tokens = default_tokens(identity["colors"], identity["typography"]["heading"], identity["typography"]["body"])
+    # allow spacing/radius overrides
+    if "spacing" in out: tokens["spacing"].update({k:str(int(v)) for k,v in out["spacing"].items()})
+    if "radius" in out and "md" in out["radius"]: tokens["radius"]["md"] = int(out["radius"]["md"])
+    return {"identity": identity, "tokens": tokens}
 
 class DesignAdvisorService:
     """Service for design advice using LLM analysis"""

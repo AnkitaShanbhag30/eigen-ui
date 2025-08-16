@@ -2,6 +2,23 @@ from typing import Dict, Any, List
 from .brand import BrandIdentity, Colors, Typography, DesignAdvisor
 import colorsys
 
+def default_tokens(colors: Dict, heading="Inter", body="Inter"):
+    return {
+        "font_heading": heading,
+        "font_body": body,
+        "spacing": {"4":16,"6":24,"8":32},
+        "radius": {"md":16},
+        "colors": {
+            "primary": colors.get("primary") or "#2D5BFF",
+            "secondary": colors.get("secondary") or "#00C2A8",
+            "accent": colors.get("accent") or colors.get("secondary") or "#00C2A8",
+            "muted": colors.get("muted") or "#EBEEF3",
+            "text": "#0B0B0B",
+            "bg": "#FFFFFF",
+        },
+        "max_width": 880
+    }
+
 def compute_contrast_ratio(color1: str, color2: str) -> float:
     """Compute WCAG contrast ratio between two colors"""
     def hex_to_rgb(hex_color: str) -> tuple:
