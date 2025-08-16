@@ -168,14 +168,13 @@ class GPTImageGenerator {
     return missingImages;
   }
 
-  // Generate hero image using GPT
+  // Generate hero image using GPT (simplified prompt)
   async generateHeroImageWithGPT(x, y, z, colors) {
-    const prompt = `Modern professional business website hero image for ${x || 'AI platform'} that ${y || 'transforms business'}. Clean minimalist style, professional aesthetic, innovative and trustworthy mood.`;
-    
+    const prompt = `Professional business website hero image for ${x || 'AI platform'}. Clean minimalist style, modern aesthetic, innovative and trustworthy mood. No text, no words, no letters. Just visual elements that represent technology and business success.`;
     return await this.callGPTImageAPI(prompt, 'hero');
   }
 
-  // Generate feature images using GPT
+  // Generate feature images using GPT (simplified prompt)
   async generateFeatureImagesWithGPT(x, z, colors) {
     const { keywords } = this.brandData;
     const relevantKeywords = keywords?.filter(k => 
@@ -183,61 +182,39 @@ class GPTImageGenerator {
     ).slice(0, 6) || [];
     
     const featureImages = [];
-    
     for (const keyword of relevantKeywords) {
-      const prompt = `Professional business icon for ${keyword} feature. Modern flat design, clean lines, simple and recognizable.`;
-      
+      const prompt = `Professional business icon for ${keyword} feature. Modern flat design, clean lines, simple and recognizable. No text, no words, no letters. Just a clean icon symbol.`;
       const image = await this.callGPTImageAPI(prompt, `feature_${keyword}`);
       featureImages.push(image);
     }
-    
     return featureImages;
   }
 
-  // Generate process images using GPT
+  // Generate process images using GPT (simplified prompt)
   async generateProcessImagesWithGPT(x, z, colors) {
     const processSteps = [
-      {
-        step: 1,
-        title: "Discovery",
-        description: `Analysis of ${x?.toLowerCase() || 'business needs'} for ${z}`
-      },
-      {
-        step: 2,
-        title: "Implementation",
-        description: `Deployment of ${x?.toLowerCase() || 'business solution'}`
-      },
-      {
-        step: 3,
-        title: "Optimization",
-        description: `Continuous improvement of ${x?.toLowerCase() || 'business process'}`
-      }
+      { step: 1, title: "AI Analysis" },
+      { step: 2, title: "Personalization Setup" },
+      { step: 3, title: "Conversion Optimization" }
     ];
     
     const processImages = [];
-    
     for (const step of processSteps) {
-      const prompt = `Professional business illustration for ${step.title} step. Modern clean design, represents business process workflow.`;
-      
+      const prompt = `Professional business illustration for ${step.title} step. Modern clean design, represents business process workflow. No text, no words, no letters. Just visual elements showing the concept.`;
       const image = await this.callGPTImageAPI(prompt, `process_${step.step}`);
       processImages.push(image);
     }
-    
     return processImages;
   }
 
-  // Generate testimonial images using GPT
+  // Generate testimonial images using GPT (simplified prompt)
   async generateTestimonialImagesWithGPT(x, z, colors) {
-    const prompt = `Professional business portrait for testimonial. Modern professional person, trustworthy and approachable mood.`;
-    
+    const prompt = `Professional business portrait for testimonial. Modern professional person, trustworthy and approachable mood. No text, no words, no letters. Just a clean professional headshot.`;
     const testimonialImages = [];
-    
-    // Generate 2 different testimonial portraits
     for (let i = 0; i < 2; i++) {
       const image = await this.callGPTImageAPI(prompt, `testimonial_${i + 1}`);
       testimonialImages.push(image);
     }
-    
     return testimonialImages;
   }
 

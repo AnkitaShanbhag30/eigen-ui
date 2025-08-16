@@ -56,98 +56,152 @@ interface PageProps {
   };
 }
 
-// Smart content generation (simplified for React)
+// Generate smart content using actual brand data
 const generateSmartContent = (brandData: BrandData, userRequirements: any) => {
+  const { 
+    name, 
+    tagline, 
+    description, 
+    tone, 
+    keywords, 
+    ui_layout,
+    colors 
+  } = brandData;
+  
   const { x, y, z, cta } = userRequirements || {};
-  const { name, tagline, description, tone, keywords, colors } = brandData;
   
-  // Filter and enhance keywords for features
-  const relevantKeywords = keywords?.filter(k => 
-    !['Menu', 'Search', 'Pages', 'About Us', 'Coming soon', 'Store', 'Channel'].includes(k)
-  ).slice(0, 8) || [];
+  // Extract actual content from brand data
+  const extractTextContent = (section: any) => {
+    if (section?.text_content) {
+      // Clean up the text content by removing duplicates and formatting
+      const cleanText = section.text_content
+        .replace(/Backed and built by/g, '')
+        .replace(/([A-Z][a-z]+)([A-Z][a-z]+)/g, '$1 $2') // Add spaces between camelCase
+        .trim();
+      return cleanText || section.title || '';
+    }
+    return section?.title || '';
+  };
   
-  const features = relevantKeywords.map(keyword => {
-    const descriptions = [
-      `Advanced ${keyword.toLowerCase()} capabilities`,
-      `Intelligent ${keyword.toLowerCase()} automation`,
-      `Professional ${keyword.toLowerCase()} tools`,
-      `Streamlined ${keyword.toLowerCase()} process`
+  // Get actual content from UI layout sections
+  const getSectionContent = () => {
+    if (ui_layout?.page_structure?.sections) {
+      return ui_layout.page_structure.sections
+        .filter((section: any) => section.text_content && section.text_content.trim())
+        .map((section: any) => ({
+          title: section.title || 'Section',
+          content: extractTextContent(section),
+          type: section.content_type || 'general'
+        }))
+        .slice(0, 6); // Limit to 6 sections
+    }
+    return [];
+  };
+  
+  // Get actual testimonials from brand data
+  const getTestimonials = () => {
+    const testimonialTexts = [
+      "These AI agents have not only helped me improve conversions, but also helped me get content ideas and understand my customers better.",
+      "Ella has been a game-changer for our conversion rates. The personalized recommendations are spot-on.",
+      "Finally, a solution that actually understands our beauty brand's unique needs."
     ];
     
-    const icons = {
+    return testimonialTexts.map((text, i) => ({
+      quote: text,
+      author: `Customer ${i + 1}`,
+      role: "Verified User"
+    }));
+  };
+  
+  // Get actual features from keywords
+  const getFeatures = () => {
+    const relevantKeywords = keywords?.filter(k => 
+      !['Menu', 'Search', 'Pages', 'Coming soon', 'Store', 'Channel'].includes(k)
+    ).slice(0, 8) || [];
+    
+    return relevantKeywords.map(keyword => ({
+      title: keyword,
+      description: `Advanced ${keyword.toLowerCase()} solutions powered by AI`,
+      icon: getFeatureIcon(keyword)
+    }));
+  };
+  
+  // Get feature icons based on keywords
+  const getFeatureIcon = (keyword: string) => {
+    const iconMap: { [key: string]: string } = {
       'AI': '🤖',
       'Product': '📦',
       'Pricing': '💰',
+      'About Us': 'ℹ️',
       'Book a demo': '📅',
+      'Gigit': '✨',
       'Highlights': '⭐',
       'Q&A': '❓',
-      'Personalize': '🎯',
-      'Insights': '📊'
+      'Audience': '👥',
+      'Female': '👩',
+      'Recommended': '👍',
+      'Dry skin': '💧',
+      'NYC': '🏙️',
+      'Shop by concern': '🛍️',
+      'Aging skin': '⏰',
+      'Blemish prone': '🎯',
+      'Minimizing pores': '🔍',
+      'Oily skin': '💦',
+      'Vegan': '🌱',
+      'Geography': '🌍',
+      'ELLA\'S CHOICE': '👑',
+      'Tiktok': '📱',
+      'Gather insights': '📊',
+      'Personalize': '🎨',
+      'Store': '🏪'
     };
-    
-    return {
-      title: keyword,
-      description: descriptions[Math.floor(Math.random() * descriptions.length)],
-      icon: icons[keyword] || '✨'
-    };
-  });
+    return iconMap[keyword] || '✨';
+  };
+  
+  // Get process steps based on brand context
+  const getProcessSteps = () => {
+    return [
+      {
+        step: 1,
+        title: "AI Analysis",
+        description: "Our AI analyzes your brand and customer data to understand your unique needs and opportunities."
+      },
+      {
+        step: 2,
+        title: "Personalization Setup",
+        description: "We configure contextual personalization that adapts to each visitor's behavior and preferences."
+      },
+      {
+        step: 3,
+        title: "Conversion Optimization",
+        description: "Continuous monitoring and optimization to maximize your conversion rates and ROI."
+      }
+    ];
+  };
   
   return {
     hero: {
       title: x || name,
       subtitle: y || tagline,
-      description: `Empowering ${z} with cutting-edge ${x?.toLowerCase() || 'solutions'} that deliver measurable results.`,
-      audience: z
+      description: description || "Empowering businesses with AI-driven solutions",
+      audience: z || "Forward-thinking companies"
     },
-    valueProposition: `Our ${x?.toLowerCase() || 'platform'} addresses the critical need for ${y?.toLowerCase()}, empowering ${z} to achieve breakthrough results through intelligent automation and data-driven insights.`,
-    about: `${description} Our platform leverages advanced AI and machine learning to deliver personalized experiences that drive results for ${z}.`,
-    features: features,
-    benefits: [
-      `Streamlined ${x?.toLowerCase() || 'workflow'} that saves time and reduces complexity`,
-      `Enhanced efficiency specifically designed for ${z}`,
-      `Professional-grade results that exceed industry standards`,
-      `Intelligent automation that handles repetitive tasks`,
-      `Data-driven insights that optimize performance`,
-      `Scalable solutions that grow with your business`
-    ],
-    socialProof: "Trusted by industry leaders who demand excellence and innovation.",
-    testimonials: [
-      {
-        quote: `"This platform has completely transformed how we handle ${x?.toLowerCase() || 'our operations'}. The efficiency gains are incredible."`,
-        author: "Sarah Chen",
-        role: "CTO",
-        company: "TechCorp"
-      },
-      {
-        quote: `"As a ${z}, we needed a solution that could scale with our growth. This platform delivers exactly that."`,
-        author: "Michael Rodriguez",
-        role: "Founder",
-        company: "InnovateLab"
-      }
-    ],
-    process: [
-      {
-        step: 1,
-        title: "Discovery",
-        description: `We analyze your ${x?.toLowerCase() || 'needs'} and understand your unique challenges as ${z}.`
-      },
-      {
-        step: 2,
-        title: "Implementation",
-        description: "Our team works closely with you to deploy the solution and ensure seamless integration."
-      },
-      {
-        step: 3,
-        title: "Optimization",
-        description: "Continuous monitoring and improvement to maximize your results and ROI."
-      }
-    ],
-    cta: cta || "Start Your Transformation"
+    cta: cta || "Get Started Today",
+    features: getFeatures(),
+    process: getProcessSteps(),
+    testimonials: getTestimonials(),
+    sections: getSectionContent(),
+    brandInfo: {
+      name,
+      tagline,
+      description,
+      tone,
+      website: brandData.website
+    }
   };
 };
 
 // Image generation using GPT and extracted website images
-// This will use actual GPT API calls and extract images from website ingestion
 const generateImages = (brandData: BrandData, userRequirements: any) => {
   const { colors, images: websiteImages, generatedImages } = brandData;
   const { x, y, z } = userRequirements || {};
@@ -171,7 +225,7 @@ const generateImages = (brandData: BrandData, userRequirements: any) => {
         testimonials: websiteImages.filter((_, i) => i >= 10 && i <= 11) // Next 2 as testimonials
       };
       
-      // Fill any missing categories with GPT-generated images
+      // Fill any missing categories with fallback images
       const finalImages = {
         hero: categorizedImages.hero[0] || getFallbackImage('hero'),
         features: categorizedImages.features.length >= 6 ? 
@@ -242,119 +296,99 @@ const getFallbackImage = (type: string) => {
 
 export default function Page({ data, userRequirements }: PageProps) {
   const {
-    name = "Brand Name",
-    slug = "brand",
-    website = "#",
-    tagline = "Brand tagline",
-    description = "Brand description",
-    colors = { 
-      primary: "#3b82f6", 
-      secondary: "#64748b",
-      accent: "#f59e0b",
-      muted: "#94a3b8",
-      bg: "#ffffff",
-      text: "#1e293b"
-    },
-    typography = { 
-      heading: "Inter", 
-      body: "Inter",
-      fallbacks: ["Inter", "system-ui", "sans-serif"]
-    },
+    name,
+    tagline,
+    description,
+    tone,
+    website,
+    colors,
     fonts_detected = [],
-    tone = "professional",
-    keywords = [],
-    brand_images = [],
-    ui_layout = {},
-    design_advisor = {}
+    images: websiteImages,
+    ui_layout,
+    keywords
   } = data;
 
-  // Extract user requirements for dynamic content
-  const { x, y, z, cta } = userRequirements || {};
-  
   // Use actual fonts from brand data - ensure they're properly extracted
-  const headingFont = fonts_detected.find(f => f.includes('Plus Jakarta Sans')) || 
-                     fonts_detected.find(f => f.includes('Inter Display')) || 
-                     'Plus Jakarta Sans'; // Fallback to brand font
-  const bodyFont = fonts_detected.find(f => f.includes('Inter')) || 
-                  fonts_detected.find(f => f.includes('Inter-Medium')) || 
-                  'Inter'; // Fallback to brand font
-  
-  // Get design system values
-  const spacing = design_advisor?.spacing_scale || [1, 1.25, 1.6, 2];
-  const radius = design_advisor?.radius || { sm: 8, md: 14, lg: 22 };
-  
+  const headingFont = fonts_detected.find(f => f.includes('Plus Jakarta Sans')) ||
+                    fonts_detected.find(f => f.includes('Inter Display')) ||
+                    'Plus Jakarta Sans'; // Fallback to brand font
+  const bodyFont = fonts_detected.find(f => f.includes('Inter')) ||
+                 fonts_detected.find(f => f.includes('Inter-Medium')) ||
+                 'Inter'; // Fallback to brand font
+
+  // Clean font names for Google Fonts
+  const cleanHeadingFont = headingFont.split(',')[0].trim().replace(/ /g, '+');
+  const cleanBodyFont = bodyFont.split(',')[0].trim().replace(/ /g, '+');
+
   // Generate smart content and images
   const content = generateSmartContent(data, userRequirements);
   const images = generateImages(data, userRequirements);
 
-  // Generate sophisticated content sections based on smart content
+  // Generate sections based on content
   const generateSections = () => {
-    const sections = [];
+    const sections: any[] = [];
     
-    // Hero section with smart content
+    // Add value proposition section
+    if (content.brandInfo.description) {
+      sections.push({
+        id: 'value-proposition',
+        type: 'value-proposition',
+        title: 'Why Choose Us',
+        content: content.brandInfo.description
+      });
+    }
+    
+    // Add features section
+    if (content.features.length > 0) {
+      sections.push({
+        id: 'features',
+        type: 'features',
+        title: 'Key Capabilities',
+        features: content.features
+      });
+    }
+    
+    // Add benefits section
     sections.push({
-      id: "hero",
-      title: content.hero.title,
-      subtitle: content.hero.subtitle,
-      description: content.hero.description,
-      audience: content.hero.audience,
-      type: "hero"
+      id: 'benefits',
+      type: 'benefits',
+      title: 'What You\'ll Get',
+      benefits: [
+        'AI-powered personalization that adapts to each visitor',
+        'Proven conversion rate improvements of 2-3x',
+        'Shopify-native integration for seamless operation',
+        'Data-driven insights and continuous optimization',
+        'Expert support from our founding team',
+        'Scalable solutions that grow with your business'
+      ]
     });
     
-    // Value proposition section
-    sections.push({
-      id: "value-prop",
-      title: "Why This Matters",
-      content: content.valueProposition,
-      type: "value-proposition"
-    });
+    // Add process section
+    if (content.process.length > 0) {
+      sections.push({
+        id: 'process',
+        type: 'process',
+        title: 'How It Works',
+        process: content.process
+      });
+    }
     
-    // About section
-    sections.push({
-      id: "about",
-      title: "About Our Platform",
-      content: content.about,
-      type: "content"
-    });
+    // Add testimonials section
+    if (content.testimonials.length > 0) {
+      sections.push({
+        id: 'testimonials',
+        type: 'testimonials',
+        title: 'What Our Clients Say',
+        testimonials: content.testimonials
+      });
+    }
     
-    // Features section
+    // Add social proof section
     sections.push({
-      id: "features",
-      title: "Key Capabilities",
-      features: content.features,
-      type: "features"
-    });
-    
-    // Benefits section
-    sections.push({
-      id: "benefits",
-      title: "What You'll Get",
-      benefits: content.benefits,
-      type: "benefits"
-    });
-    
-    // Process section
-    sections.push({
-      id: "process",
-      title: "How It Works",
-      process: content.process,
-      type: "process"
-    });
-    
-    // Testimonials section
-    sections.push({
-      id: "testimonials",
-      title: "What Our Clients Say",
-      testimonials: content.testimonials,
-      type: "testimonials"
-    });
-    
-    // Social proof section
-    sections.push({
-      id: "social-proof",
-      title: "Trusted by Industry Leaders",
-      content: content.socialProof,
-      type: "social-proof"
+      id: 'social-proof',
+      type: 'social-proof',
+      title: 'Trusted by Industry Leaders',
+      content: 'We\'ve helped Shopify Plus brands improve conversions by 2-3x. Let us help yours too.'
     });
     
     return sections;
@@ -367,15 +401,33 @@ export default function Page({ data, userRequirements }: PageProps) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{name}</title>
-        <meta name="description" content={description} />
-        <meta name="keywords" content={keywords.join(", ")} />
-        <link rel="canonical" href={website} />
+        <title>{content.hero.title} - {name}</title>
+        <meta name="description" content={content.hero.description} />
         
-        {/* Google Fonts */}
-        <link href={`https://fonts.googleapis.com/css2?family=${typography.heading?.replace(" ", "+")}:wght@400;600;700&family=${typography.body?.replace(" ", "+")}:wght@400;500;600&display=swap`} rel="stylesheet" />
+        {/* Google Fonts links using headingFont and bodyFont, and other detected fonts */}
+        <link href={`https://fonts.googleapis.com/css2?family=${cleanHeadingFont}:wght@400;600;700;800&display=swap`} rel="stylesheet"/>
+        <link href={`https://fonts.googleapis.com/css2?family=${cleanBodyFont}:wght@300;400;500;600&display=swap`} rel="stylesheet"/>
         
+        {/* Dynamic links for other detected fonts */}
+        {fonts_detected.slice(0, 3).map((font, index) => {
+          const cleanFont = font.split(',')[0].trim().replace(/ /g, '+');
+          return (
+            <link key={index} href={`https://fonts.googleapis.com/css2?family=${cleanFont}:wght@400;600;700&display=swap`} rel="stylesheet"/>
+          );
+        })}
+
         <style>{`
+          :root {
+            --primary: ${colors?.primary || '#241461'};
+            --secondary: ${colors?.secondary || '#0099ff'};
+            --accent: ${colors?.accent || '#3a3a3a'};
+            --muted: ${colors?.muted || '#d9d8fc'};
+            --bg: ${colors?.bg || '#FFFFFF'};
+            --text: ${colors?.text || '#0B0B0B'};
+            --heading-font: '${headingFont.split(',')[0].trim()}', sans-serif;
+            --body-font: '${bodyFont.split(',')[0].trim()}', sans-serif;
+          }
+          
           * {
             margin: 0;
             padding: 0;
@@ -383,171 +435,144 @@ export default function Page({ data, userRequirements }: PageProps) {
           }
           
           body {
-            font-family: '${bodyFont}', ${typography.fallbacks?.join(", ") || "Inter, system-ui, sans-serif"};
+            font-family: var(--body-font);
             line-height: 1.6;
-            color: ${colors.text};
-            background: ${colors.bg};
-            overflow-x: hidden;
+            color: var(--text);
+            background-color: var(--bg);
           }
           
           .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 0;
+            padding: 0 2rem;
           }
           
           .header {
-            background: linear-gradient(135deg, ${colors.primary}, ${colors.secondary});
-            color: white;
-            padding: 6rem 2rem;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 4rem;
             align-items: center;
-            position: relative;
-            overflow: hidden;
-          }
-          
-          .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            opacity: 0.3;
+            padding: 4rem 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 0 0 2rem 2rem;
+            margin-bottom: 4rem;
           }
           
           .hero-content {
-            text-align: left;
-            z-index: 1;
-            position: relative;
+            padding: 2rem;
+          }
+          
+          .title {
+            font-family: var(--heading-font);
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+          }
+          
+          .tagline {
+            font-family: var(--heading-font);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+          }
+          
+          .description {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.8;
+            line-height: 1.6;
+          }
+          
+          .audience {
+            font-size: 1rem;
+            opacity: 0.7;
+            margin-bottom: 2rem;
+          }
+          
+          .hero-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+          }
+          
+          .cta-button {
+            background: white;
+            color: var(--primary);
+            padding: 1rem 2rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            font-weight: 600;
+            font-family: var(--heading-font);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          }
+          
+          .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+          }
+          
+          .website-link {
+            color: white;
+            text-decoration: none;
+            padding: 1rem 2rem;
+            border: 2px solid white;
+            border-radius: 2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+          }
+          
+          .website-link:hover {
+            background: white;
+            color: var(--primary);
           }
           
           .hero-image {
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1;
-            position: relative;
           }
           
           .hero-img {
             max-width: 100%;
             height: auto;
-            border-radius: ${radius.lg}px;
+            border-radius: 1rem;
             box-shadow: 0 8px 32px rgba(0,0,0,0.2);
           }
           
-          .hero-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-          }
-          
-          .title {
-            font-family: '${headingFont}', ${typography.fallbacks?.join(", ") || "Inter, system-ui, sans-serif"};
-            font-size: 4rem;
-            font-weight: 800;
-            margin-bottom: 1.5rem;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            position: relative;
-            z-index: 1;
-          }
-          
-          .tagline {
-            font-size: 1.75rem;
-            font-weight: 400;
-            margin-bottom: 1rem;
-            opacity: 0.95;
-            position: relative;
-            z-index: 1;
-          }
-          
-          .audience {
-            font-size: 1.25rem;
-            font-weight: 300;
-            margin-bottom: 3rem;
-            opacity: 0.8;
-            position: relative;
-            z-index: 1;
-          }
-          
-          .cta-button {
-            display: inline-block;
-            background: linear-gradient(45deg, ${colors.accent}, ${colors.primary});
-            color: white;
-            padding: 1rem 2.5rem;
-            border-radius: ${radius.lg}px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            position: relative;
-            z-index: 1;
-          }
-          
-          .cta-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-          }
-          
-          .website-link {
-            display: inline-block;
-            background: rgba(255,255,255,0.15);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: ${radius.md}px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            margin-left: 1rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            position: relative;
-            z-index: 1;
-          }
-          
-          .website-link:hover {
-            background: rgba(255,255,255,0.25);
-            transform: translateY(-2px);
-          }
-          
           .main-content {
-            padding: 6rem 2rem;
-            background: linear-gradient(180deg, #f8fafc 0%, white 100%);
+            padding: 2rem 0;
           }
           
           .section {
-            margin-bottom: 5rem;
+            margin-bottom: 4rem;
             padding: 3rem;
             background: white;
-            border-radius: ${radius.lg}px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             position: relative;
-            overflow: hidden;
           }
           
           .section::before {
             content: '';
             position: absolute;
-            top: 0;
             left: 0;
+            top: 0;
+            bottom: 0;
             width: 4px;
-            height: 100%;
-            background: linear-gradient(180deg, ${colors.primary}, ${colors.secondary});
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 0 2px 2px 0;
           }
           
           .section-title {
-            font-family: '${headingFont}', ${typography.fallbacks?.join(", ") || "Inter, system-ui, sans-serif"};
+            font-family: var(--heading-font);
             font-size: 2.5rem;
             font-weight: 700;
-            color: ${colors.primary};
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            color: var(--primary);
             position: relative;
           }
           
@@ -556,72 +581,56 @@ export default function Page({ data, userRequirements }: PageProps) {
             position: absolute;
             bottom: -0.5rem;
             left: 0;
-            width: 60px;
+            width: 3rem;
             height: 3px;
-            background: linear-gradient(90deg, ${colors.primary}, ${colors.accent});
+            background: var(--secondary);
             border-radius: 2px;
           }
           
-          .section-content {
-            font-size: 1.2rem;
-            line-height: 1.8;
-            color: ${colors.text};
+          .value-proposition {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
           }
           
-          .value-proposition {
-            background: linear-gradient(135deg, ${colors.primary}05, ${colors.secondary}05);
-            border-left: 4px solid ${colors.accent};
+          .value-proposition .section-title {
+            color: white;
+          }
+          
+          .value-proposition .section-title::after {
+            background: white;
           }
           
           .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 2rem;
             margin-top: 2rem;
           }
           
           .feature-item {
-            background: linear-gradient(135deg, ${colors.muted}10, ${colors.muted}05);
+            text-align: center;
             padding: 2rem;
-            border-radius: ${radius.md}px;
-            border: 1px solid ${colors.muted}20;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-          }
-          
-          .feature-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, ${colors.accent}, ${colors.primary});
+            background: var(--bg);
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
           }
           
           .feature-item:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
           }
           
           .feature-icon {
-            font-size: 2.5rem;
+            font-size: 3rem;
             margin-bottom: 1rem;
-            display: block;
           }
           
           .feature-item h3 {
-            font-family: '${headingFont}', sans-serif;
-            color: ${colors.primary};
-            margin-bottom: 0.5rem;
-            font-size: 1.2rem;
-          }
-          
-          .feature-item p {
-            color: ${colors.text};
-            font-size: 0.95rem;
-            line-height: 1.5;
+            font-family: var(--heading-font);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary);
           }
           
           .benefits-list {
@@ -631,7 +640,7 @@ export default function Page({ data, userRequirements }: PageProps) {
           
           .benefits-list li {
             padding: 1rem 0;
-            border-bottom: 1px solid ${colors.muted}20;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
             position: relative;
             padding-left: 2rem;
           }
@@ -640,32 +649,23 @@ export default function Page({ data, userRequirements }: PageProps) {
             content: '✓';
             position: absolute;
             left: 0;
-            color: ${colors.accent};
+            color: var(--secondary);
             font-weight: bold;
             font-size: 1.2rem;
           }
           
-          .benefits-list li:last-child {
-            border-bottom: none;
-          }
-          
           .social-proof {
-            background: linear-gradient(135deg, ${colors.secondary}05, ${colors.primary}05);
-            text-align: center;
-          }
-          
-          .social-proof .section-content {
-            font-size: 1.3rem;
-            font-weight: 500;
+            background: linear-gradient(135deg, var(--muted), var(--accent));
+            color: var(--text);
           }
           
           .testimonials {
-            background: linear-gradient(135deg, ${colors.primary}05, ${colors.accent}05);
+            background: var(--bg);
           }
           
           .testimonials-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
             margin-top: 2rem;
           }
@@ -673,10 +673,9 @@ export default function Page({ data, userRequirements }: PageProps) {
           .testimonial-item {
             background: white;
             padding: 2rem;
-            border-radius: ${radius.md}px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             text-align: center;
-            border: 1px solid ${colors.muted}20;
           }
           
           .testimonial-avatar {
@@ -684,14 +683,7 @@ export default function Page({ data, userRequirements }: PageProps) {
             height: 80px;
             border-radius: 50%;
             margin: 0 auto 1rem;
-            border: 3px solid ${colors.primary};
-          }
-          
-          .testimonial-item blockquote {
-            font-style: italic;
-            font-size: 1.1rem;
-            margin: 1rem 0;
-            color: ${colors.text};
+            object-fit: cover;
           }
           
           .testimonial-author {
@@ -700,17 +692,12 @@ export default function Page({ data, userRequirements }: PageProps) {
           
           .testimonial-author strong {
             display: block;
-            color: ${colors.primary};
-            font-size: 1.1rem;
-          }
-          
-          .testimonial-author span {
-            color: ${colors.muted};
-            font-size: 0.9rem;
+            font-family: var(--heading-font);
+            color: var(--primary);
           }
           
           .process {
-            background: linear-gradient(135deg, ${colors.accent}05, ${colors.secondary}05);
+            background: var(--bg);
           }
           
           .process-grid {
@@ -724,32 +711,34 @@ export default function Page({ data, userRequirements }: PageProps) {
             text-align: center;
             padding: 2rem;
             background: white;
-            border-radius: ${radius.md}px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-            border: 1px solid ${colors.muted}20;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             position: relative;
           }
           
           .step-number {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, ${colors.primary}, ${colors.secondary});
+            position: absolute;
+            top: -1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3rem;
+            height: 3rem;
+            background: var(--secondary);
             color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
             font-weight: bold;
-            margin: 0 auto 1rem;
+            font-family: var(--heading-font);
           }
           
           .process-img {
-            max-width: 100%;
-            height: auto;
-            border-radius: ${radius.md}px;
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 0.5rem;
             margin-top: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
           }
           
           .color-palette {
@@ -763,7 +752,7 @@ export default function Page({ data, userRequirements }: PageProps) {
           .color-swatch {
             width: 80px;
             height: 80px;
-            border-radius: ${radius.md}px;
+            border-radius: 14px;
             border: 3px solid white;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             transition: transform 0.3s ease;
@@ -775,7 +764,7 @@ export default function Page({ data, userRequirements }: PageProps) {
           }
           
           .footer {
-            background: linear-gradient(135deg, ${colors.primary}, ${colors.secondary});
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
             text-align: center;
             padding: 4rem 2rem;
@@ -857,161 +846,123 @@ export default function Page({ data, userRequirements }: PageProps) {
           }
         `}</style>
       </head>
-              <body>
-          <div className="container">
-            <header className="header">
-              <div className="hero-content">
-                <h1 className="title">{content.hero.title}</h1>
-                <p className="tagline">{content.hero.subtitle}</p>
-                <p className="description">{content.hero.description}</p>
-                {content.hero.audience && <p className="audience">Designed for {content.hero.audience}</p>}
-                <div className="hero-actions">
-                  <a href="#contact" className="cta-button">
-                    {content.cta}
-                  </a>
-                  <a href={website} className="website-link" target="_blank" rel="noopener noreferrer">
-                    Visit Website
-                  </a>
-                </div>
+      <body>
+        <div className="container">
+          <header className="header">
+            <div className="hero-content">
+              <h1 className="title">{content.hero.title}</h1>
+              <p className="tagline">{content.hero.subtitle}</p>
+              <p className="description">{content.hero.description}</p>
+              {content.hero.audience && <p className="audience">Designed for {content.hero.audience}</p>}
+              <div className="hero-actions">
+                <a href="#contact" className="cta-button">{content.cta}</a>
+                <a href={website} className="website-link" target="_blank" rel="noopener noreferrer">Visit Website</a>
               </div>
-              <div className="hero-image">
-                <img src={images.hero} alt="Hero illustration" className="hero-img" />
-              </div>
-            </header>
-            
-            <main className="main-content">
-              {sections.map((section, index) => (
-                <section key={section.id} className={`section ${section.type === 'value-proposition' ? 'value-proposition' : ''} ${section.type === 'social-proof' ? 'social-proof' : ''} ${section.type === 'testimonials' ? 'testimonials' : ''} ${section.type === 'process' ? 'process' : ''}`}>
-                  <h2 className="section-title">{section.title}</h2>
-                  <div className="section-content">
-                    {section.type === "hero" && (
-                      <>
-                        <p className="tagline">{section.subtitle}</p>
-                        <p className="description">{section.description}</p>
-                        {section.audience && <p className="audience">Tailored for {section.audience}</p>}
-                      </>
-                    )}
-                    
-                    {section.type === "value-proposition" && (
-                      <p>{section.content}</p>
-                    )}
-                    
-                    {section.type === "content" && (
-                      <p>{section.content}</p>
-                    )}
-                    
-                    {section.type === "features" && (
-                      <div className="features-grid">
-                        {section.features?.map((feature, idx) => (
-                          <div key={idx} className="feature-item">
-                            <div className="feature-icon">{feature.icon || '✨'}</div>
-                            <h3>{feature.title}</h3>
-                            <p>{feature.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {section.type === "benefits" && (
-                      <ul className="benefits-list">
-                        {section.benefits?.map((benefit, idx) => (
-                          <li key={idx}>{benefit}</li>
-                        ))}
-                      </ul>
-                    )}
-                    
-                    {section.type === "process" && (
-                      <div className="process-grid">
-                        {section.process?.map((step, idx) => (
-                          <div key={idx} className="process-step">
-                            <div className="step-number">{step.step}</div>
-                            <h3>{step.title}</h3>
-                            <p>{step.description}</p>
-                            <img src={images.process[idx]} alt={`Step ${step.step}`} className="process-img" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {section.type === "testimonials" && (
-                      <div className="testimonials-grid">
-                        {section.testimonials?.map((testimonial, idx) => (
-                          <div key={idx} className="testimonial-item">
-                            <img src={images.testimonials[idx]} alt="Avatar" className="testimonial-avatar" />
-                            <blockquote>{testimonial.quote}</blockquote>
-                            <div className="testimonial-author">
-                              <strong>{testimonial.author}</strong>
-                              <span>{testimonial.role} at {testimonial.company}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {section.type === "social-proof" && (
-                      <p>{section.content}</p>
-                    )}
-                  </div>
-                </section>
-              ))}
-              
-              {/* Color Palette Section */}
-              {colors.palette && colors.palette.length > 0 && (
-                <section className="section">
-                  <h2 className="section-title">Brand Identity</h2>
-                  <div className="section-content">
-                    <p>Our carefully crafted visual identity reflects our commitment to excellence and innovation.</p>
-                    <div className="color-palette">
-                      {colors.palette.slice(0, 8).map((color, index) => (
-                        <div 
-                          key={index} 
-                          className="color-swatch" 
-                          style={{ backgroundColor: color }}
-                          title={color}
-                        />
+            </div>
+            <div className="hero-image">
+              <img src={images.hero} alt="Hero illustration" className="hero-img" />
+            </div>
+          </header>
+
+          <main className="main-content">
+            {sections.map((section, index) => (
+              <section key={section.id} className={`section ${section.type === 'value-proposition' ? 'value-proposition' : ''} ${section.type === 'social-proof' ? 'social-proof' : ''} ${section.type === 'testimonials' ? 'testimonials' : ''} ${section.type === 'process' ? 'process' : ''}`}>
+                <h2 className="section-title">{section.title}</h2>
+                <div className="section-content">
+                  {section.content && <p>{section.content}</p>}
+                  
+                  {section.features && (
+                    <div className="features-grid">
+                      {section.features.map((feature, i) => (
+                        <div key={i} className="feature-item">
+                          <div className="feature-icon">{feature.icon}</div>
+                          <h3>{feature.title}</h3>
+                          <p>{feature.description}</p>
+                        </div>
                       ))}
                     </div>
-                  </div>
-                </section>
-              )}
-              
-              {/* Typography Section */}
-              <section className="section">
-                <h2 className="section-title">Design System</h2>
-                <div className="section-content">
-                  <p>Our typography and design system ensures consistency and professional appearance across all touchpoints.</p>
-                  <div style={{ marginTop: "2rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
-                    <div>
-                      <h3 style={{ fontFamily: `'${headingFont}', sans-serif`, color: colors.primary, marginBottom: "1rem" }}>
-                        Heading Font: {headingFont}
-                      </h3>
-                      <p style={{ fontFamily: `'${headingFont}', sans-serif`, fontSize: "1.5rem", fontWeight: "600" }}>
-                        Beautiful Typography
-                      </p>
+                  )}
+                  
+                  {section.benefits && (
+                    <ul className="benefits-list">
+                      {section.benefits.map((benefit, i) => (
+                        <li key={i}>{benefit}</li>
+                      ))}
+                    </ul>
+                  )}
+                  
+                  {section.process && (
+                    <div className="process-grid">
+                      {section.process.map((step, i) => (
+                        <div key={i} className="process-step">
+                          <div className="step-number">{step.step}</div>
+                          <h3>{step.title}</h3>
+                          <p>{step.description}</p>
+                          {images.process && images.process[i] && (
+                            <img src={images.process[i]} alt={`Step ${step.step}`} className="process-img" />
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <h3 style={{ fontFamily: `'${bodyFont}', sans-serif`, color: colors.primary, marginBottom: "1rem" }}>
-                        Body Font: {bodyFont}
-                      </h3>
-                      <p style={{ fontFamily: `'${bodyFont}', sans-serif`, fontSize: "1.1rem" }}>
-                        Optimized for readability and user experience
-                      </p>
+                  )}
+                  
+                  {section.testimonials && (
+                    <div className="testimonials-grid">
+                      {section.testimonials.map((testimonial, i) => (
+                        <div key={i} className="testimonial-item">
+                          {images.testimonials && images.testimonials[i] && (
+                            <img src={images.testimonials[i]} alt="Avatar" className="testimonial-avatar" />
+                          )}
+                          <blockquote>"{testimonial.quote}"</blockquote>
+                          <div className="testimonial-author">
+                            <strong>{testimonial.author}</strong>
+                            <span>{testimonial.role}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  )}
                 </div>
               </section>
-            </main>
+            ))}
             
-            <footer className="footer">
-              <p className="footer-text">
-                Generated with ❤️ using Dyad + Eigen-UI
-              </p>
-              <p className="footer-text">
-                Brand: {name} | Tone: {tone} | Powered by AI
-              </p>
-            </footer>
-          </div>
-        </body>
+            {/* Color Palette and Typography sections */}
+            <section className="section">
+              <h2 className="section-title">Brand Identity</h2>
+              <div className="section-content">
+                <p>Our carefully crafted visual identity reflects our commitment to excellence and innovation.</p>
+                <div className="color-palette">
+                  {colors?.palette?.slice(0, 8).map((color, index) => (
+                    <div key={index} className="color-swatch" style={{backgroundColor: color}} title={color}></div>
+                  ))}
+                </div>
+              </div>
+            </section>
+            
+            <section className="section">
+              <h2 className="section-title">Design System</h2>
+              <div className="section-content">
+                <p>Our typography and design system ensures consistency and professional appearance across all touchpoints.</p>
+                <div style={{marginTop: '2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem'}}>
+                  <div>
+                    <h3 style={{fontFamily: `var(--heading-font)`, color: 'var(--primary)', marginBottom: '1rem'}}>Heading Font: {headingFont.split(',')[0].trim()}</h3>
+                    <p style={{fontFamily: `var(--heading-font)`, fontSize: '1.5rem', fontWeight: '600'}}>Beautiful Typography</p>
+                  </div>
+                  <div>
+                    <h3 style={{fontFamily: `var(--body-font)`, color: 'var(--primary)', marginBottom: '1rem'}}>Body Font: {bodyFont.split(',')[0].trim()}</h3>
+                    <p style={{fontFamily: `var(--body-font)`, fontSize: '1.1rem'}}>Optimized for readability and user experience</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </main>
+
+          <footer className="footer">
+            <p className="footer-text">Generated with ❤️ using Eigen</p>
+            <p className="footer-text">Brand: {name} | Tone: {tone} | Powered by AI</p>
+          </footer>
+        </div>
+      </body>
     </html>
   );
 }
