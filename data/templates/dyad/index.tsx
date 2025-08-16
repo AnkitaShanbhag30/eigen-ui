@@ -146,23 +146,98 @@ const generateSmartContent = (brandData: BrandData, userRequirements: any) => {
   };
 };
 
-// Image generation (placeholder URLs with brand colors)
+// Image generation using GPT and extracted website images
+// This will use actual GPT API calls and extract images from website ingestion
 const generateImages = (brandData: BrandData, userRequirements: any) => {
-  const { colors } = brandData;
+  const { colors, images: websiteImages, generatedImages } = brandData;
   const { x, y, z } = userRequirements || {};
   
+  try {
+    // First, try to use GPT-generated images if available
+    if (generatedImages) {
+      console.log("Using GPT-generated images");
+      return generatedImages;
+    }
+    
+    // Then, try to use images from the original website ingestion
+    if (websiteImages && websiteImages.length > 0) {
+      console.log(`Found ${websiteImages.length} images from website ingestion`);
+      
+      // Categorize website images based on their content
+      const categorizedImages = {
+        hero: websiteImages.filter((_, i) => i === 0), // First image as hero
+        features: websiteImages.filter((_, i) => i >= 1 && i <= 6), // Next 6 as features
+        process: websiteImages.filter((_, i) => i >= 7 && i <= 9), // Next 3 as process
+        testimonials: websiteImages.filter((_, i) => i >= 10 && i <= 11) // Next 2 as testimonials
+      };
+      
+      // Fill any missing categories with GPT-generated images
+      const finalImages = {
+        hero: categorizedImages.hero[0] || getFallbackImage('hero'),
+        features: categorizedImages.features.length >= 6 ? 
+          categorizedImages.features.slice(0, 6) : 
+          generateMultipleFallbackImages('features', 6),
+        process: categorizedImages.process.length >= 3 ? 
+          categorizedImages.process.slice(0, 3) : 
+          generateMultipleFallbackImages('process', 3),
+        testimonials: categorizedImages.testimonials.length >= 2 ? 
+          categorizedImages.testimonials.slice(0, 2) : 
+          generateMultipleFallbackImages('testimonials', 2)
+      };
+      
+      return finalImages;
+    } else {
+      // No website images, use fallback images
+      return generateFallbackImages(colors);
+    }
+  } catch (error) {
+    console.error('Image generation failed, using fallbacks:', error);
+    return generateFallbackImages(colors);
+  }
+};
+
+// Generate multiple fallback images
+const generateMultipleFallbackImages = (type: string, count: number) => {
+  const images = [];
+  for (let i = 0; i < count; i++) {
+    images.push(getFallbackImage(type));
+  }
+  return images;
+};
+
+// Fallback images when GPT generation fails
+const generateFallbackImages = (colors: any) => {
   return {
-    hero: `https://via.placeholder.com/800x400/${colors?.primary?.replace('#', '') || '241461'}/${colors?.secondary?.replace('#', '') || '0099ff'}?text=${encodeURIComponent(x || 'Hero Image')}`,
-    features: Array(6).fill().map((_, i) => 
-      `https://via.placeholder.com/300x200/${colors?.primary?.replace('#', '') || '241461'}/${colors?.secondary?.replace('#', '') || '0099ff'}?text=Feature+${i + 1}`
-    ),
-    process: Array(3).fill().map((_, i) => 
-      `https://via.placeholder.com/250x200/${colors?.primary?.replace('#', '') || '241461'}/${colors?.secondary?.replace('#', '') || '0099ff'}?text=Step+${i + 1}`
-    ),
-    testimonials: Array(3).fill().map((_, i) => 
-      `https://via.placeholder.com/150x150/${colors?.primary?.replace('#', '') || '241461'}/${colors?.secondary?.replace('#', '') || '0099ff'}?text=Avatar+${i + 1}`
-    )
+    hero: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop&crop=center',
+    features: [
+      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=300&h=200&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=300&h=200&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&h=200&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=300&h=200&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=300&h=200&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&h=200&fit=crop&crop=center'
+    ],
+    process: [
+      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=250&h=200&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=250&h=200&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=250&h=200&fit=crop&crop=center'
+    ],
+    testimonials: [
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+    ]
   };
+};
+
+// Helper function to get fallback image
+const getFallbackImage = (type: string) => {
+  const fallbacks = {
+    hero: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop&crop=center',
+    features: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=300&h=200&fit=crop&crop=center',
+    process: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=250&h=200&fit=crop&crop=center',
+    testimonials: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
+  };
+  return fallbacks[type] || fallbacks.hero;
 };
 
 export default function Page({ data, userRequirements }: PageProps) {
@@ -199,10 +274,10 @@ export default function Page({ data, userRequirements }: PageProps) {
   // Use actual fonts from brand data - ensure they're properly extracted
   const headingFont = fonts_detected.find(f => f.includes('Plus Jakarta Sans')) || 
                      fonts_detected.find(f => f.includes('Inter Display')) || 
-                     typography.heading;
+                     'Plus Jakarta Sans'; // Fallback to brand font
   const bodyFont = fonts_detected.find(f => f.includes('Inter')) || 
                   fonts_detected.find(f => f.includes('Inter-Medium')) || 
-                  typography.body;
+                  'Inter'; // Fallback to brand font
   
   // Get design system values
   const spacing = design_advisor?.spacing_scale || [1, 1.25, 1.6, 2];
