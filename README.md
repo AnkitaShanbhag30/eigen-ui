@@ -1,21 +1,25 @@
 # Brand Content Generator
 
-A minimal Python + Flask backend for generating branded content from URLs and predefined templates.
+A powerful Flask application that generates brand-styled content and renders it to high-quality PNG/PDF assets using Playwright. The system automatically extracts brand identity from websites and creates pixel-perfect, customizable templates.
 
-## Features
+## ✨ Key Features
 
-- **Brand Ingestion**: Scrape websites to extract brand identity (colors, fonts, tone, keywords)
-- **Content Generation**: Create one-pagers, newsletters, and blog posts using brand voice
-- **Asset Rendering**: Render HTML templates to PNG/PDF with pixel-perfect fidelity using Playwright
-- **Local Storage**: No database required - everything stored in `/data` directory
-- **CLI & API**: Both command-line interface and REST API available
-- **LLM Integration**: OpenAI (default) and Gemini support for content generation
+- **🎨 Brand Identity Extraction**: Automatically scrape and analyze websites for colors, fonts, and design patterns
+- **📱 Responsive Templates**: Modern, mobile-friendly templates that adapt to brand data
+- **🖼️ High-Quality Rendering**: Pixel-perfect PNG and PDF output using Playwright (Chromium)
+- **🔧 Modular Design**: Highly configurable templates with dynamic content sections
+- **📊 Rich Data Support**: KPIs, metrics, custom sections, and dynamic content
+- **🚀 CLI & API**: Both command-line interface and REST API for automation
 
-## Quick Start
+## 🚀 Quick Start
 
 ### 1. Setup Environment
 
 ```bash
+# Clone and setup
+git clone <your-repo>
+cd eigen-ui
+
 # Create virtual environment
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
@@ -23,254 +27,273 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Install Chromium for Playwright (one time)
+# Install Playwright browser
 python -m playwright install chromium
-
-# Copy environment file and add your API keys
-cp env.example .env
-# Edit .env and add your OPENAI_API_KEY
 ```
 
-### 2. Basic Usage
-
-#### CLI Commands
+### 2. Ingest Your First Brand
 
 ```bash
-# Ingest a brand from a website
-python cli.py ingest https://example.com demo
+# Extract brand identity from a website
+python cli.py ingest https://example.com my-brand
 
-# Upload additional assets
-python cli.py upload demo ./logo.png ./brochure.pdf
+# View brand details
+python cli.py show-brand my-brand
 
-# Generate content
-python cli.py generate demo onepager \
-  --x "launching X" \
-  --y "to educate leads" \
-  --z "SMB marketers" \
-  --w "./notes.txt" \
-  --cta "Join the beta" \
-  --to-html
-
-# Render assets to PNG/PDF using Playwright
-python cli.py render demo onepager --format png --title "Q3 Results"
-python cli.py render demo onepager --format pdf --title "Q3 Results" --subtitle "Revenue Growth"
-
-# List all brands
-python cli.py list-brands
-
-# Show brand details
-python cli.py show-brand demo
+# See design tokens
+python cli.py design-tokens my-brand
 ```
 
-#### REST API
+### 3. Generate Content
 
 ```bash
-# Start Flask server
-export FLASK_APP=app.main:app
-flask run -p 5050
-
-# Or run directly
-python -m app.main
+# Generate content with AI
+python cli.py generate my-brand onepager \
+  --x "building amazing products" \
+  --y "to solve real problems" \
+  --z "busy professionals" \
+  --cta "Get Started Today"
 ```
 
-**API Endpoints:**
-- `POST /ingest` - Ingest brand from URL
-- `POST /upload` - Upload additional assets
-- `POST /generate` - Generate content
-- `GET /brands` - List all brands
-- `GET /brands/<slug>` - Get brand details
-- `POST /render` - Render HTML templates to PNG/PDF
-- `GET /templates` - List available templates
-- `GET /healthz` - Health check
-
-### 3. Asset Rendering
-
-The new renderer allows you to convert HTML templates to high-quality PNG images or PDF documents using Playwright.
-
-#### CLI Rendering
+### 4. Render High-Quality Assets
 
 ```bash
-# Basic rendering
-python cli.py render demo onepager --format png
+# Render to PNG with custom content
+python cli.py render my-brand onepager \
+  --format png \
+  --title "Our Amazing Product" \
+  --subtitle "Solving real problems for busy professionals" \
+  --cta "Get Started Today" \
+  --kpis "Users:10K,Revenue:$50K,Growth:+25%" \
+  --bullets "Easy to use;Fast setup;24/7 support" \
+  --width 1200 \
+  --height 1600 \
+  --scale 2
 
-# Custom dimensions and scale
-python cli.py render demo onepager --format png --width 2400 --height 3200 --scale 2
-
-# Custom content
-python cli.py render demo onepager --format pdf \
-  --title "Holiday Campaign" \
-  --subtitle "Q4 Revenue Push" \
-  --cta "Shop Now" \
-  --output holiday-campaign.pdf
+# Render to PDF
+python cli.py render my-brand onepager \
+  --format pdf \
+  --title "Product Overview" \
+  --subtitle "Everything you need to know" \
+  --output "product-overview.pdf"
 ```
 
-#### API Rendering
+## 🎨 Enhanced Template System
+
+### Dynamic Brand Integration
+
+Templates automatically adapt to your brand data:
+
+- **Colors**: Primary, secondary, accent, muted, text, and background colors
+- **Typography**: Heading and body fonts with fallbacks
+- **Spacing**: Dynamic spacing scale based on brand preferences
+- **Layout**: Responsive grid systems and component layouts
+
+### Modular Content Sections
+
+Templates support various content types:
 
 ```bash
-# Render to PNG with brand data
-curl -X POST http://127.0.0.1:5050/render \
+# Custom sections with JSON
+python cli.py render my-brand onepager \
+  --sections '[
+    {
+      "title": "Features",
+      "type": "bullets",
+      "bullets": ["Feature 1", "Feature 2", "Feature 3"]
+    },
+    {
+      "title": "Metrics",
+      "type": "grid",
+      "columns": 3,
+      "items": [
+        {"title": "Users", "value": "10K", "icon": "👥"},
+        {"title": "Revenue", "value": "$50K", "icon": "💰"},
+        {"title": "Growth", "value": "+25%", "icon": "📈"}
+      ]
+    },
+    {
+      "title": "Testimonial",
+      "type": "quote",
+      "quote": "This product changed everything for us!",
+      "author": "Jane Doe, CEO"
+    }
+  ]'
+```
+
+### KPI and Metrics Display
+
+```bash
+# Key Performance Indicators
+python cli.py render my-brand onepager \
+  --kpis "Monthly Users:15K,Revenue:$75K,Churn Rate:2%,NPS Score:85"
+```
+
+### Bullet Points
+
+```bash
+# Custom bullet points
+python cli.py render my-brand onepager \
+  --bullets "Easy to use;Fast setup;24/7 support;Mobile friendly;API access"
+```
+
+## 🔧 API Usage
+
+### Render Endpoint
+
+```bash
+# POST /render
+curl -X POST http://localhost:5000/render \
   -H 'Content-Type: application/json' \
   -d '{
     "template": "onepager",
     "format": "png",
     "data": {
-      "brand_slug": "demo",
-      "title": "Q3 Retail",
-      "subtitle": "Brand Content",
-      "cta": "Learn More"
+      "title": "Product Launch",
+      "subtitle": "Revolutionary new features",
+      "cta": "Learn More",
+      "kpis": [
+        {"label": "Users", "value": "10K"},
+        {"label": "Revenue", "value": "$50K"}
+      ],
+      "bullets": ["Feature 1", "Feature 2", "Feature 3"]
     },
     "width": 1200,
     "height": 1600,
     "scale": 2
-  }' --output onepager.png
-
-# Render to PDF with custom brand data
-curl -X POST http://127.0.0.1:5050/render \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "template": "onepager",
-    "format": "pdf",
-    "data": {
-      "brand_name": "Custom Brand",
-      "brand_color": "#FF6B6B",
-      "text_color": "#2C3E50",
-      "title": "Q3 Results"
-    },
-    "width": 1200,
-    "height": 1600
-  }' --output custom-brand.pdf
+  }'
 ```
 
-#### Render Parameters
+### Available Endpoints
 
-- `template`: Template name (`onepager`, `newsletter`, `blogpost`)
-- `format`: Output format (`png` or `pdf`)
-- `data`: Template variables and brand information
-- `width`: Output width in pixels
-- `height`: Output height in pixels
-- `scale`: Device scale factor for PNG (1-3, default: 2 for retina)
+- `POST /render` - Render templates to PNG/PDF
+- `GET /templates` - List available templates
+- `GET /healthz` - Health check
+- `GET /brands/{slug}` - Get brand data
 
-### 4. Example Workflow
+## 📁 Template Structure
 
-```bash
-# 1. Ingest a brand
-python cli.py ingest https://acme.com acme
+### Base Template (`base.html.j2`)
 
-# 2. Generate content
-python cli.py generate acme onepager \
-  --x "revolutionary AI platform" \
-  --y "transforms business operations" \
-  --z "enterprise decision makers" \
-  --cta "Schedule a demo"
+- Dynamic brand color integration
+- Responsive typography scale
+- Utility classes for spacing and layout
+- Mobile-first responsive design
 
-# 3. Render to high-quality assets
-python cli.py render acme onepager --format png --title "Acme AI Platform"
-python cli.py render acme onepager --format pdf --title "Acme AI Platform"
+### Onepager Template (`onepager.html.j2`)
 
-# 4. Check the output
-ls data/drafts/
-cat data/drafts/acme-onepager-*.md
+- Hero section with image/text options
+- Brand overview with keywords
+- Dynamic content sections
+- KPI/metrics display
+- Custom bullet points
+- Call-to-action sections
+- Contact information
+
+### Customization Options
+
+Templates support:
+
+- **Content Types**: Text, bullets, grids, quotes, KPIs
+- **Layout Variants**: 1-4 column grids, centered, left-aligned
+- **Visual Elements**: Icons, images, color schemes
+- **Responsive Behavior**: Mobile, tablet, desktop layouts
+
+## 🎯 Advanced Usage
+
+### Custom Section Types
+
+```json
+{
+  "type": "grid",
+  "columns": 2,
+  "items": [
+    {
+      "icon": "🚀",
+      "title": "Fast",
+      "value": "10x faster",
+      "description": "Lightning quick performance"
+    }
+  ]
+}
 ```
 
-## Project Structure
+### Brand Data Integration
 
-```
-/app
-  __init__.py          # Flask app factory
-  main.py              # App entry point
-  routes.py            # API endpoints
-  brand.py             # BrandIdentity model
-  renderer.py          # Playwright-based renderer
-  generate.py          # Content generation
-  templates_loader.py  # Template management
-  # ... other modules
+Templates automatically use:
 
-/templates
-  onepager.html.j2     # One-pager template
-  newsletter.html.j2   # Newsletter template
-  blogpost.html.j2     # Blog post template
-  base.html.j2         # Base template
-  theme.css.j2         # Styling
+- Brand colors and typography
+- Logo and imagery
+- Tone and keywords
+- Website and contact info
+- Design preferences
 
-/static
-  /fonts              # Brand fonts (add BrandSans.woff2)
-  # ... other static assets
-```
+### Responsive Design
 
-## Development
+- Mobile-first approach
+- Dynamic spacing based on brand preferences
+- Adaptive typography scales
+- Flexible grid systems
 
-### Running Tests
+## 🐳 Docker Deployment
 
-```bash
-# Install development dependencies
-pip install pytest
-
-# Run tests
-pytest
-
-# Run specific test file
-pytest tests/unit/test_renderer.py -v
-```
-
-### Adding New Templates
-
-1. Create new `.html.j2` file in `/templates/`
-2. Extend `base.html.j2` for consistent styling
-3. Add template to `TemplatesLoader.templates` in `app/templates_loader.py`
-4. Test with both CLI generation and renderer
-
-### Adding New LLM Providers
-
-1. Implement `LLMProvider` interface in `app/llm.py`
-2. Add provider logic to `get_llm_provider()`
-3. Update environment variable handling
-
-## Production Deployment
-
-### Docker
-
-```bash
-# Build and run with Docker
+```dockerfile
+# Build and run
 docker build -t brand-generator .
-docker run -p 8080:8080 brand-generator
+docker run -p 5000:5000 brand-generator
 ```
 
-### Local Production
+## 🧪 Testing
 
 ```bash
-# Install gunicorn
-pip install gunicorn
+# Run tests
+python -m pytest tests/unit/test_renderer.py -v
 
-# Run with gunicorn
-gunicorn -w 2 -k gthread --threads 4 -b 0.0.0.0:8080 app.main:app
+# Test rendering
+python test_renderer.py
 ```
 
-## Troubleshooting
+## 🔍 Troubleshooting
 
 ### Common Issues
 
-1. **API Key Errors**: Ensure `OPENAI_API_KEY` is set in `.env`
-2. **Import Errors**: Make sure virtual environment is activated
-3. **Permission Errors**: Check write permissions for `/data` directory
-4. **Network Timeouts**: Increase `timeout_ms` for slow websites
-5. **Playwright Issues**: Ensure Chromium is installed with `python -m playwright install chromium`
+1. **Template not found**: Ensure template exists in `templates/` directory
+2. **Brand not found**: Check brand slug and data directory
+3. **Rendering fails**: Verify Playwright installation and browser binaries
+4. **Custom data not showing**: Check JSON format and template variables
 
 ### Debug Mode
 
 ```bash
-# Enable Flask debug mode
+# Enable debug logging
 export FLASK_DEBUG=1
-flask run -p 5050
+python -m app.main
 ```
 
-## License
+## 📚 Template Development
 
-MIT License - see LICENSE file for details.
+### Creating New Templates
 
-## Contributing
+1. Extend `base.html.j2`
+2. Use brand variables: `{{ brand.name }}`, `{{ brand.colors.primary }}`
+3. Access custom data: `{{ custom_data.title }}`, `{{ custom_data.kpis }}`
+4. Use utility classes: `text-brand-primary`, `bg-brand-accent`
+
+### Template Variables
+
+- `brand`: Complete brand identity data
+- `tokens`: Generated design tokens
+- `custom_data`: User-provided content
+- `outline`: Generated content structure
+- `title`, `subtitle`, `cta`: Basic content fields
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request 
+3. Add tests for new functionality
+4. Submit a pull request
+
+## 📄 License
+
+MIT License - see LICENSE file for details. 

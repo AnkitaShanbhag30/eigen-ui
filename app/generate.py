@@ -90,33 +90,54 @@ def polish_outline(o: Dict, brand: Dict) -> Dict:
     return o
 
 def render_html(template_key: str, brand: Dict, tokens: Dict, outline: Dict, hero_url: str|None):
-    env = get_env()
-    tpl = env.get_template(f"{template_key}.html.j2")
-    
-    # Ensure outline has minimum content
-    if not outline.get("headline"):
-        outline["headline"] = f"Welcome to {brand.get('name', 'Our Platform')}"
-    if not outline.get("subhead"):
-        outline["subhead"] = f"Discover how we can help you achieve your goals"
-    if not outline.get("sections"):
-        outline["sections"] = [
-            {
-                "title": "Get Started",
-                "bullets": ["Simple setup", "Quick results", "Expert support"]
-            }
-        ]
-    if not outline.get("cta"):
-        outline["cta"] = "Learn More"
-    
-    html = tpl.render(
-        brand=brand,
-        tokens=tokens,
-        outline=outline,
-        hero_url=hero_url,
-        title=outline.get("headline",""),
-        font_links=_font_links(brand["typography"]["heading"], brand["typography"]["body"])
-    )
-    return html
+    """Render HTML using the new template system with proper custom_data structure"""
+    try:
+        from .renderer import render_template_with_brand
+        
+        # Prepare custom data from outline and other parameters
+        custom_data = {
+            'title': outline.get("headline", ""),
+            'subtitle': outline.get("subhead", ""),
+            'cta': outline.get("cta", ""),
+            'hero_url': hero_url,
+            'outline': outline,
+            'font_links': _font_links(brand["typography"]["heading"], brand["typography"]["body"])
+        }
+        
+        # Use the new renderer system
+        html = render_template_with_brand(template_key, brand, custom_data)
+        return html
+        
+    except Exception as e:
+        # Fallback to old system if new renderer fails
+        print(f"⚠️  New renderer failed, falling back to old system: {e}")
+        env = get_env()
+        tpl = env.get_template(f"{template_key}.html.j2")
+        
+        # Ensure outline has minimum content
+        if not outline.get("headline"):
+            outline["headline"] = f"Welcome to {brand.get('name', 'Our Platform')}"
+        if not outline.get("subhead"):
+            outline["subhead"] = f"Discover how we can help you achieve your goals"
+        if not outline.get("sections"):
+            outline["sections"] = [
+                {
+                    "title": "Get Started",
+                    "bullets": ["Simple setup", "Quick results", "Expert support"]
+                }
+            ]
+        if not outline.get("cta"):
+            outline["cta"] = "Learn More"
+        
+        html = tpl.render(
+            brand=brand,
+            tokens=tokens,
+            outline=outline,
+            hero_url=hero_url,
+            title=outline.get("headline",""),
+            font_links=_font_links(brand["typography"]["heading"], brand["typography"]["body"])
+        )
+        return html
 
 def write_pdf(html: str, out_path: str) -> bool:
     import os

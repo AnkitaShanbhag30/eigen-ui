@@ -345,7 +345,12 @@ def render(
     title: str = typer.Option("", "--title", "-t", help="Custom title for the content"),
     subtitle: str = typer.Option("", "--subtitle", help="Custom subtitle"),
     cta: str = typer.Option("", "--cta", help="Custom call to action"),
-    hero: str = typer.Option("", "--hero", help="Hero image path (optional)")
+    hero: str = typer.Option("", "--hero", help="Hero image path (optional)"),
+    kpis: str = typer.Option("", "--kpis", help="KPIs in format: 'label:value,label:value'"),
+    bullets: str = typer.Option("", "--bullets", help="Bullet points separated by semicolons"),
+    sections: str = typer.Option("", "--sections", help="Custom sections in JSON format"),
+    contact: str = typer.Option("", "--contact", help="Contact email or info"),
+    cta_text: str = typer.Option("", "--cta-text", help="Custom CTA description text")
 ):
     """Render brand-styled assets (PNG or PDF) from templates using Playwright"""
     typer.echo(f"Rendering {template} template for brand {slug} to {format.upper()}...")
@@ -367,8 +372,10 @@ def render(
             typer.echo(f"❌ Invalid scale: {scale}. Must be between 1 and 3", err=True)
             raise typer.Exit(1)
         
-        # Prepare custom data
+        # Prepare custom data with enhanced parsing
         custom_data = {}
+        
+        # Basic content
         if title:
             custom_data['title'] = title
         if subtitle:
@@ -377,6 +384,50 @@ def render(
             custom_data['cta'] = cta
         if hero:
             custom_data['hero_url'] = hero
+        if contact:
+            custom_data['contact'] = contact
+        if cta_text:
+            custom_data['cta_text'] = cta_text
+        
+        # Parse KPIs
+        if kpis:
+            try:
+                kpi_list = []
+                for kpi_pair in kpis.split(','):
+                    if ':' in kpi_pair:
+                        label, value = kpi_pair.split(':', 1)
+                        kpi_list.append({
+                            'label': label.strip(),
+                            'value': value.strip()
+                        })
+                if kpi_list:
+                    custom_data['kpis'] = kpi_list
+                    typer.echo(f"📊 Parsed {len(kpi_list)} KPIs")
+            except Exception as e:
+                typer.echo(f"⚠️  Warning: Could not parse KPIs: {e}")
+        
+        # Parse bullet points
+        if bullets:
+            try:
+                bullet_list = [b.strip() for b in bullets.split(';') if b.strip()]
+                if bullet_list:
+                    custom_data['bullets'] = bullet_list
+                    typer.echo(f"📝 Parsed {len(bullet_list)} bullet points")
+            except Exception as e:
+                typer.echo(f"⚠️  Warning: Could not parse bullets: {e}")
+        
+        # Parse custom sections
+        if sections:
+            try:
+                import json
+                sections_data = json.loads(sections)
+                if isinstance(sections_data, list):
+                    custom_data['sections'] = sections_data
+                    typer.echo(f"📋 Parsed {len(sections_data)} custom sections")
+                else:
+                    typer.echo("⚠️  Warning: Sections should be a JSON array")
+            except Exception as e:
+                typer.echo(f"⚠️  Warning: Could not parse sections JSON: {e}")
         
         # Import renderer functions
         from app.renderer import render_template_with_brand, render_to_bytes, get_mimetype_and_filename
@@ -417,6 +468,20 @@ def render(
         if format.lower() == 'png':
             typer.echo(f"🔍 Scale: {scale}x (output: {width*scale}x{height*scale})")
         typer.echo(f"📁 File size: {len(out_bytes) / 1024:.1f} KB")
+        
+        # Show what was rendered
+        if custom_data:
+            typer.echo(f"\n🎯 Custom content rendered:")
+            if custom_data.get('title'):
+                typer.echo(f"   Title: {custom_data['title']}")
+            if custom_data.get('subtitle'):
+                typer.echo(f"   Subtitle: {custom_data['subtitle']}")
+            if custom_data.get('kpis'):
+                typer.echo(f"   KPIs: {len(custom_data['kpis'])} metrics")
+            if custom_data.get('bullets'):
+                typer.echo(f"   Bullets: {len(custom_data['bullets'])} points")
+            if custom_data.get('sections'):
+                typer.echo(f"   Sections: {len(custom_data['sections'])} custom sections")
         
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)

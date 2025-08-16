@@ -1,15 +1,222 @@
 {% extends "base.html.j2" %}
-{% block content %}
-  {% if hero_url %}<div class="hero"><img src="{{ hero_url }}" alt="Hero"/><div class="hero-overlay"></div><div class="hero-text"><h1>{{ outline.headline }}</h1>{% if outline.subhead %}<p>{{ outline.subhead }}</p>{% endif %}</div></div>{% else %}
-  <h1>{{ outline.headline }}</h1>{% if outline.subhead %}<p>{{ outline.subhead }}</p>{% endif %}{% endif %}
 
-  {% for s in outline.sections %}
-    <div class="card" style="margin-bottom:var(--space-8)">
-      <h2>{{ s.title }}</h2>
-      <ul>
-        {% for b in s.bullets %}<li>{{ b }}</li>{% endfor %}
-      </ul>
-    </div>
-  {% endfor %}
-  <p><a class="btn btn-primary" href="#">{{ outline.cta }}</a></p>
+{% block content %}
+  <!-- Hero Section - Dynamic based on user inputs and brand data -->
+  {% if hero_url or custom_data.hero_url %}
+    <section class="hero">
+      <img src="{{ hero_url or custom_data.hero_url }}" alt="Hero image for {{ title or outline.headline or brand.name }}"/>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <h1 class="font-bold">{{ title or outline.headline or brand.name }}</h1>
+        {% if subtitle or outline.subhead %}
+          <p>{{ subtitle or outline.subhead }}</p>
+        {% endif %}
+        {% if cta or outline.cta %}
+          <a href="#" class="btn btn-primary">{{ cta or outline.cta }}</a>
+        {% endif %}
+      </div>
+    </section>
+  {% else %}
+    <!-- Text-only hero when no image -->
+    <section class="text-center mb-10">
+      <h1 class="text-5xl font-bold text-brand-primary mb-4">
+        {{ title or outline.headline or brand.name }}
+      </h1>
+      {% if subtitle or outline.subhead %}
+        <p class="text-xl text-brand-muted mb-6 max-w-2xl mx-auto">
+          {{ subtitle or outline.subhead }}
+        </p>
+      {% endif %}
+      {% if cta or outline.cta %}
+        <a href="#" class="btn btn-primary text-lg px-8 py-4">{{ cta or outline.cta }}</a>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  <!-- Brand Overview Section - Dynamic from brand data -->
+  {% if brand.description or brand.tagline or brand.keywords %}
+    <section class="section">
+      <h2 class="section-title">About {{ brand.name }}</h2>
+      <div class="card">
+        {% if brand.description %}
+          <p class="mb-4">{{ brand.description }}</p>
+        {% endif %}
+        {% if brand.tagline %}
+          <p class="text-lg font-medium text-brand-secondary mb-4">{{ brand.tagline }}</p>
+        {% endif %}
+        {% if brand.keywords %}
+          <div class="flex gap-2 flex-wrap">
+            {% for keyword in brand.keywords[:8] %}
+              <span class="px-3 py-1 bg-brand-accent text-white text-sm rounded-full font-medium">
+                {{ keyword }}
+              </span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  <!-- Dynamic Content Sections - From user inputs or generated outline -->
+  {% if outline and outline.sections %}
+    {% for section in outline.sections %}
+      <section class="section">
+        <h2 class="section-title">{{ section.title }}</h2>
+        {% if section.bullets %}
+          <div class="card">
+            <ul class="space-y-2">
+              {% for bullet in section.bullets %}
+                <li class="flex items-start gap-3">
+                  <span class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></span>
+                  <span>{{ bullet }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+        {% if section.content %}
+          <div class="card">
+            <p>{{ section.content }}</p>
+          </div>
+        {% endif %}
+      </section>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Custom Content Sections - From user inputs -->
+  {% if custom_data.sections %}
+    {% for section in custom_data.sections %}
+      <section class="section">
+        <h2 class="section-title">{{ section.title }}</h2>
+        {% if section.type == 'bullets' and section.bullets %}
+          <div class="card">
+            <ul class="space-y-2">
+              {% for bullet in section.bullets %}
+                <li class="flex items-start gap-3">
+                  <span class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></span>
+                  <span>{{ bullet }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% elif section.type == 'grid' and section.items %}
+          <div class="grid grid-cols-{{ section.columns or 3 }} gap-6">
+            {% for item in section.items %}
+              <div class="card text-center">
+                {% if item.icon %}
+                  <div class="text-4xl mb-4">{{ item.icon }}</div>
+                {% endif %}
+                {% if item.title %}
+                  <h3 class="text-xl font-semibold text-brand-primary mb-2">{{ item.title }}</h3>
+                {% endif %}
+                {% if item.value %}
+                  <div class="text-3xl font-bold text-brand-secondary mb-2">{{ item.value }}</div>
+                {% endif %}
+                {% if item.description %}
+                  <p class="text-brand-muted">{{ item.description }}</p>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% elif section.type == 'text' and section.content %}
+          <div class="card">
+            <p>{{ section.content }}</p>
+          </div>
+        {% elif section.type == 'quote' and section.quote %}
+          <div class="card bg-brand-muted text-brand-bg">
+            <blockquote class="text-xl italic text-center">
+              "{{ section.quote }}"
+            </blockquote>
+            {% if section.author %}
+              <cite class="block text-center mt-4 text-sm">— {{ section.author }}</cite>
+            {% endif %}
+          </div>
+        {% endif %}
+      </section>
+    {% endfor %}
+  {% endif %}
+
+  <!-- KPI/Metrics Section - From user inputs -->
+  {% if custom_data.kpis or custom_data.metrics %}
+    <section class="section">
+      <h2 class="section-title">Key Metrics</h2>
+      <div class="grid grid-cols-{{ (custom_data.kpis or custom_data.metrics)|length if (custom_data.kpis or custom_data.metrics)|length <= 4 else 4 }} gap-6">
+        {% for kpi in (custom_data.kpis or custom_data.metrics) %}
+          <div class="card text-center">
+            {% if kpi.icon %}
+              <div class="text-4xl mb-4">{{ kpi.icon }}</div>
+            {% endif %}
+            <div class="text-4xl font-bold text-brand-primary mb-2">{{ kpi.value }}</div>
+            <div class="text-brand-muted font-medium">{{ kpi.label }}</div>
+            {% if kpi.change %}
+              <div class="text-sm mt-2">
+                <span class="{% if kpi.change.startswith('+') %}text-green-600{% else %}text-red-600{% endif %}">
+                  {{ kpi.change }}
+                </span>
+                {% if kpi.change_period %}
+                  <span class="text-brand-muted">vs {{ kpi.change_period }}</span>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <!-- Bullet Points Section - From user inputs -->
+  {% if custom_data.bullets %}
+    <section class="section">
+      <h2 class="section-title">Key Points</h2>
+      <div class="card">
+        <ul class="space-y-3">
+          {% for bullet in custom_data.bullets %}
+            <li class="flex items-start gap-3">
+              <span class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></span>
+              <span>{{ bullet }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  {% endif %}
+
+  <!-- Call to Action Section -->
+  {% if cta or outline.cta or custom_data.cta %}
+    <section class="section text-center">
+      <div class="card bg-brand-primary text-white">
+        <h2 class="text-2xl font-bold mb-4">Ready to Get Started?</h2>
+        <p class="text-lg mb-6 opacity-90">
+          {{ custom_data.cta_text or "Take the next step towards achieving your goals." }}
+        </p>
+        <a href="#" class="btn bg-white text-brand-primary hover:bg-gray-100 px-8 py-4 text-lg">
+          {{ cta or outline.cta or custom_data.cta or "Get Started" }}
+        </a>
+      </div>
+    </section>
+  {% endif %}
+
+  <!-- Contact/Footer Section - Dynamic from brand data -->
+  {% if brand.website or custom_data.contact %}
+    <section class="section">
+      <h2 class="section-title">Get in Touch</h2>
+      <div class="card text-center">
+        <p class="text-lg mb-4">
+          Ready to learn more about how {{ brand.name }} can help you?
+        </p>
+        <div class="flex gap-4 justify-center">
+          {% if brand.website %}
+            <a href="{{ brand.website }}" class="btn btn-secondary">
+              Visit Website
+            </a>
+          {% endif %}
+          {% if custom_data.contact %}
+            <a href="mailto:{{ custom_data.contact }}" class="btn btn-accent">
+              Contact Us
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
 {% endblock %}

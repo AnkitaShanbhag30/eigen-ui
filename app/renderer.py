@@ -113,12 +113,15 @@ def render_template_with_brand(template_name: str, brand_data: Dict[str, Any],
         if not template_loader.template_exists(template_name):
             raise ValueError(f"Template '{template_name}' not found. Available: {template_loader.list_templates()}")
         
-        # Prepare context data
+        # Prepare context data with proper structure
         context = {
             'brand': brand_data,
             'title': custom_data.get('title', brand_data.get('name', 'Brand Content')),
+            'subtitle': custom_data.get('subtitle', ''),
+            'cta': custom_data.get('cta', ''),
+            'hero_url': custom_data.get('hero_url', None),
             'font_links': custom_data.get('font_links', ''),
-            'hero_url': custom_data.get('hero_url', None)
+            'custom_data': custom_data or {}  # Pass all custom data for template access
         }
         
         # If custom data includes outline, use it; otherwise create a basic one
@@ -142,9 +145,23 @@ def render_template_with_brand(template_name: str, brand_data: Dict[str, Any],
         except Exception as e:
             # Fallback to basic tokens if generation fails
             context['tokens'] = {
-                'colors': {'primary': '#0C69F5', 'secondary': '#6b7280'},
-                'font_heading': 'Inter',
-                'font_body': 'Inter'
+                'colors': {
+                    'primary': brand_data.get('colors', {}).get('primary', '#0C69F5'),
+                    'secondary': brand_data.get('colors', {}).get('secondary', '#6b7280'),
+                    'accent': brand_data.get('colors', {}).get('accent', '#f59e0b'),
+                    'muted': brand_data.get('colors', {}).get('muted', '#9ca3af'),
+                    'text': brand_data.get('colors', {}).get('text', '#111827'),
+                    'bg': brand_data.get('colors', {}).get('bg', '#ffffff')
+                },
+                'font_heading': brand_data.get('typography', {}).get('heading', 'Inter'),
+                'font_body': brand_data.get('typography', {}).get('body', 'Inter'),
+                'spacing': {
+                    '1': 4, '2': 8, '4': 16, '6': 24, '8': 32, '10': 40
+                },
+                'radius': {
+                    'sm': 6, 'md': 12, 'lg': 20
+                },
+                'max_width': 1200
             }
         
         # Render the template
