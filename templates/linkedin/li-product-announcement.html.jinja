@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ headline or "Product Announcement" }}</title>
+    
+    <!-- Dynamic Font Loading -->
+    {% if brand.fonts_detected %}
+        {% for font in brand.fonts_detected[:2] %}
+            <link href="https://fonts.googleapis.com/css2?family={{ font|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        {% endfor %}
+    {% else %}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% endif %}
+    
+    <style>
+        :root {
+            /* Dynamic Color Variables from Theme */
+            --bg: {{ theme.tokens.bg }};
+            --surface: {{ theme.tokens.surface }};
+            --text: {{ theme.tokens.text }};
+            --text-muted: {{ theme.tokens['text-muted'] }};
+            --brand-500: {{ theme.tokens['brand-500'] }};
+            --brand-700: {{ theme.tokens['brand-700'] }};
+            --accent-500: {{ theme.tokens['accent-500'] }};
+            --accent-700: {{ theme.tokens['accent-700'] }};
+            --muted: {{ theme.tokens.muted }};
+            --cta-bg: {{ theme.pairs.cta_bg }};
+            --cta-fg: {{ theme.pairs.cta_fg }};
+            --card-bg: {{ theme.pairs.card_bg }};
+            --card-fg: {{ theme.pairs.card_fg }};
+            --border: {{ theme.pairs.border }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--bg);
+            font-size: 16px;
+        }
+        
+        /* LinkedIn Post Container */
+        .linkedin-post {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Header Section */
+        .post-header {
+            background: linear-gradient(135deg, var(--brand-500), var(--accent-500));
+            color: var(--cta-fg);
+            padding: 32px;
+            text-align: center;
+        }
+        
+        .post-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+        
+        .post-header p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Content Section */
+        .post-content {
+            padding: 40px 32px;
+        }
+        
+        .announcement-text {
+            font-size: 1.125rem;
+            line-height: 1.7;
+            color: var(--text);
+            margin-bottom: 32px;
+        }
+        
+        .key-points {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+        
+        .key-points h3 {
+            color: var(--brand-700);
+            margin-bottom: 16px;
+            font-size: 1.25rem;
+        }
+        
+        .key-points ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .key-points li {
+            padding: 8px 0;
+            color: var(--card-fg);
+            position: relative;
+            padding-left: 24px;
+        }
+        
+        .key-points li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--brand-500);
+            font-weight: bold;
+        }
+        
+        /* Product Showcase */
+        .product-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin: 32px 0;
+        }
+        
+        .product-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .product-card h4 {
+            color: var(--brand-700);
+            margin-bottom: 12px;
+            font-size: 1.125rem;
+        }
+        
+        .product-card p {
+            color: var(--card-fg);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 32px;
+            background-color: var(--muted);
+            border-radius: 12px;
+            margin: 24px 0;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background-color: var(--cta-bg);
+            color: var(--cta-fg);
+            padding: 16px 32px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.125rem;
+            transition: all 0.2s ease;
+        }
+        
+        .cta-button:hover {
+            background-color: var(--brand-700);
+            transform: translateY(-1px);
+        }
+        
+        /* Footer */
+        .post-footer {
+            background-color: var(--surface);
+            padding: 24px 32px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+        
+        .brand-info {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        
+        .brand-name {
+            color: var(--brand-700);
+            font-weight: 600;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .linkedin-post {
+                margin: 16px;
+                border-radius: 12px;
+            }
+            
+            .post-header {
+                padding: 24px 20px;
+            }
+            
+            .post-header h1 {
+                font-size: 2rem;
+            }
+            
+            .post-content {
+                padding: 24px 20px;
+            }
+            
+            .product-showcase {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="linkedin-post">
+        <!-- Header -->
+        <div class="post-header">
+            <h1>{{ headline or "🚀 Big News: Introducing Our Latest AI Innovation" }}</h1>
+            <p>{{ subhead or "We're excited to announce a breakthrough in AI-powered personalization that's going to transform how brands connect with their customers." }}</p>
+        </div>
+        
+        <!-- Content -->
+        <div class="post-content">
+            <div class="announcement-text">
+                <p>Today marks a significant milestone for {{ brand.name or "our company" }}. After months of development and testing, we're thrilled to launch our most advanced AI solution yet.</p>
+                
+                <p>This isn't just another product announcement – it's a game-changer for businesses looking to deliver truly personalized customer experiences at scale.</p>
+            </div>
+            
+            <div class="key-points">
+                <h3>🎯 What Makes This Special?</h3>
+                <ul>
+                    <li>AI-powered personalization that learns in real-time</li>
+                    <li>Seamless integration with existing platforms</li>
+                    <li>Proven to increase conversion rates by 40%+</li>
+                    <li>Built with privacy and compliance in mind</li>
+                </ul>
+            </div>
+            
+            <div class="product-showcase">
+                <div class="product-card">
+                    <h4>Smart Recommendations</h4>
+                    <p>AI that understands your customers and suggests the perfect products at the right moment.</p>
+                </div>
+                
+                <div class="product-card">
+                    <h4>Real-time Adaptation</h4>
+                    <p>Content that evolves based on user behavior, ensuring maximum engagement and conversion.</p>
+                </div>
+                
+                <div class="product-card">
+                    <h4>Seamless Integration</h4>
+                    <p>Works with your existing tech stack, no major overhauls required.</p>
+                </div>
+            </div>
+            
+            <div class="cta-section">
+                <h3 style="color: var(--brand-700); margin-bottom: 16px;">Ready to See It in Action?</h3>
+                <p style="color: var(--text-muted); margin-bottom: 24px;">Join the hundreds of brands already transforming their customer experience.</p>
+                <a href="#" class="cta-button">{{ cta or "Book Your Demo" }}</a>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="post-footer">
+            <div class="brand-info">
+                <span class="brand-name">{{ brand.name or "Brand" }}</span> • 
+                {{ brand.tagline or "AI-Powered Personalization Platform" }}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

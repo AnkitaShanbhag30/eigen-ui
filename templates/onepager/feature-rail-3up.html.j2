@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title or "AI-Powered Personalization Platform" }}</title>
+    
+    <!-- Dynamic Font Loading -->
+    {% if brand.fonts_detected %}
+        {% for font in brand.fonts_detected[:3] %}
+            <link href="https://fonts.googleapis.com/css2?family={{ font|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        {% endfor %}
+    {% else %}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% endif %}
+    
+    <style>
+        :root {
+            /* Dynamic Color Variables from Theme */
+            --bg: {{ tokens.colors.bg or '#ffffff' }};
+            --surface: {{ tokens.colors.surface or '#f8f9fa' }};
+            --text: {{ tokens.colors.text or '#0B0B0B' }};
+            --text-muted: {{ tokens.colors.text_muted or '#6c757d' }};
+            --brand-500: {{ tokens.colors.primary }};
+            --brand-700: {{ tokens.colors.primary_dark or tokens.colors.primary }};
+            --accent-500: {{ tokens.colors.secondary }};
+            --accent-700: {{ tokens.colors.secondary_dark or tokens.colors.secondary }};
+            --muted: {{ tokens.colors.muted or '#e9ecef' }};
+            --cta-bg: {{ tokens.colors.primary }};
+            --cta-fg: #ffffff;
+            --card-bg: {{ tokens.colors.surface or '#ffffff' }};
+            --card-fg: {{ tokens.colors.text or '#0B0B0B' }};
+            --border: {{ tokens.colors.border or '#dee2e6' }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--bg);
+            font-size: 16px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        /* Hero Section - Centered with Feature Focus */
+        .hero {
+            text-align: center;
+            padding: 100px 0 80px;
+            background: linear-gradient(135deg, var(--surface), var(--muted));
+        }
+        
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            color: var(--brand-500);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .hero p {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background-color: var(--cta-bg);
+            color: var(--cta-fg);
+            padding: 20px 40px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.25rem;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .cta-button:hover {
+            background-color: var(--brand-700);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Features Section - 3-Column Grid */
+        .features {
+            padding: 80px 0;
+            background-color: var(--bg);
+        }
+        
+        .features-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .features-header h2 {
+            font-size: 2.5rem;
+            color: var(--brand-700);
+            margin-bottom: 16px;
+        }
+        
+        .features-header p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+        
+        .feature-card {
+            background-color: var(--card-bg);
+            padding: 40px 32px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--brand-500), var(--accent-500));
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--brand-500), var(--accent-500));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .feature-card h3 {
+            color: var(--brand-700);
+            margin-bottom: 16px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .feature-card p {
+            color: var(--card-fg);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            text-align: left;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            color: var(--card-fg);
+            position: relative;
+            padding-left: 24px;
+        }
+        
+        .feature-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--brand-500);
+            font-weight: bold;
+        }
+        
+        /* Additional Features Section */
+        .additional-features {
+            padding: 60px 0;
+            background-color: var(--surface);
+        }
+        
+        .additional-features h3 {
+            text-align: center;
+            font-size: 2rem;
+            color: var(--brand-700);
+            margin-bottom: 40px;
+        }
+        
+        .feature-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+            margin-bottom: 60px;
+        }
+        
+        .feature-row:nth-child(even) {
+            direction: rtl;
+        }
+        
+        .feature-row:nth-child(even) .feature-content {
+            direction: ltr;
+        }
+        
+        .feature-content h4 {
+            font-size: 1.5rem;
+            color: var(--brand-700);
+            margin-bottom: 16px;
+        }
+        
+        .feature-content p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .feature-visual {
+            height: 300px;
+            background: linear-gradient(135deg, var(--brand-500), var(--accent-500));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .feature-row {
+                grid-template-columns: 1fr;
+                direction: ltr;
+            }
+            
+            .feature-row:nth-child(even) {
+                direction: ltr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>{{ outline.headline or "AI-Powered Personalization Platform" }}</h1>
+            <p>{{ outline.subhead or "Transform your customer experience with intelligent, data-driven personalization that adapts to every user." }}</p>
+            <a href="#" class="cta-button">{{ outline.cta or "Start Your Free Trial" }}</a>
+        </section>
+        
+        <!-- Features Section -->
+        <section class="features">
+            <div class="features-header">
+                <h2>Why Choose {{ brand.name or "Our Platform" }}?</h2>
+                <p>{{ brand.tagline or "Discover the power of intelligent personalization" }}</p>
+            </div>
+            
+            <div class="features-grid">
+                {% for section in outline.sections[:3] %}
+                <div class="feature-card">
+                    <div class="feature-icon">{{ loop.index }}</div>
+                    <h3>{{ section.title or "Feature" }}</h3>
+                    <p>
+                        {% if section.bullets %}
+                            {% for bullet in section.bullets[:2] %}
+                                {{ bullet }}{% if not loop.last %}. {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {{ section.description or "Discover how this feature can transform your business." }}
+                        {% endif %}
+                    </p>
+                    {% if section.bullets and section.bullets|length > 2 %}
+                    <ul class="feature-list">
+                        {% for bullet in section.bullets[2:4] %}
+                        <li>{{ bullet }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        
+        <!-- Additional Features -->
+        <section class="additional-features">
+            <h3>Advanced Capabilities</h3>
+            
+            {% for section in outline.sections[3:5] %}
+            <div class="feature-row">
+                <div class="feature-content">
+                    <h4>{{ section.title or "Advanced Feature" }}</h4>
+                    <p>
+                        {% if section.bullets %}
+                            {% for bullet in section.bullets[:3] %}
+                                {{ bullet }}{% if not loop.last %}. {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {{ section.description or "Advanced capabilities that set us apart." }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="feature-visual">
+                    {{ section.title or "Feature" }}
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+    </div>
+</body>
+</html>

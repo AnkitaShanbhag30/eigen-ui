@@ -21,11 +21,13 @@ class TemplatesLoader:
             lstrip_blocks=True
         )
         
-        # Available templates
+        # Available templates - updated to support new channels
         self.templates = {
             'onepager': 'onepager.html.j2',
             'newsletter': 'newsletter.html.j2',
-            'blogpost': 'blogpost.html.j2'
+            'blogpost': 'blogpost.html.j2',
+            'story': 'story/story-highlights.html.j2',  # Default story template
+            'linkedin': 'linkedin/li-product-announcement.html.j2'  # Default LinkedIn template
         }
     
     def get_template(self, template_name: str) -> Optional[Template]:

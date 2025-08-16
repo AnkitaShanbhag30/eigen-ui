@@ -1,333 +1,345 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>{{ title or brand.name }}</title>
-  <style>{% include "theme.css.j2" %}</style>
-  {% if font_links %}{{ font_links|safe }}{% endif %}
-  
-  <!-- Dynamic brand-specific styling -->
-  <style>
-    :root {
-      /* Brand Colors - dynamically pulled from brand data */
-      --brand-primary: {{ brand.colors.primary or tokens.colors.primary or '#0C69F5' }};
-      --brand-secondary: {{ brand.colors.secondary or tokens.colors.secondary or '#6b7280' }};
-      --brand-accent: {{ brand.colors.accent or tokens.colors.accent or '#f59e0b' }};
-      --brand-muted: {{ brand.colors.muted or tokens.colors.muted or '#9ca3af' }};
-      --brand-bg: {{ brand.colors.bg or tokens.colors.bg or '#ffffff' }};
-      --brand-text: {{ brand.colors.text or tokens.colors.text or '#111827' }};
-      
-      /* Typography - dynamically pulled from brand data */
-      --font-heading: "{{ brand.typography.heading or tokens.font_heading or 'Inter' }}", {{ brand.typography.fallbacks|join(", ") if brand.typography.fallbacks else 'system-ui, -apple-system, sans-serif' }};
-      --font-body: "{{ brand.typography.body or tokens.font_body or 'Inter' }}", {{ brand.typography.fallbacks|join(", ") if brand.typography.fallbacks else 'system-ui, -apple-system, sans-serif' }};
-      
-      /* Spacing and Layout - dynamically pulled from brand data */
-      --space-xs: {{ (tokens.spacing["1"] if tokens.spacing and "1" in tokens.spacing else 4) }}px;
-      --space-sm: {{ (tokens.spacing["2"] if tokens.spacing and "2" in tokens.spacing else 8) }}px;
-      --space-md: {{ (tokens.spacing["4"] if tokens.spacing and "4" in tokens.spacing else 16) }}px;
-      --space-lg: {{ (tokens.spacing["6"] if tokens.spacing and "6" in tokens.spacing else 24) }}px;
-      --space-xl: {{ (tokens.spacing["8"] if tokens.spacing and "8" in tokens.spacing else 32) }}px;
-      --space-2xl: {{ (tokens.spacing["10"] if tokens.spacing and "10" in tokens.spacing else 40) }}px;
-      
-      /* Border radius - dynamically pulled from brand data */
-      --radius-sm: {{ (tokens.radius.sm if tokens.radius and "sm" in tokens.radius else 6) }}px;
-      --radius-md: {{ (tokens.radius.md if tokens.radius and "md" in tokens.radius else 12) }}px;
-      --radius-lg: {{ (tokens.radius.lg if tokens.radius and "lg" in tokens.radius else 20) }}px;
-      
-      /* Layout */
-      --max-width: {{ tokens.max_width if tokens.max_width else 1200 }}px;
-      --container-padding: var(--space-md);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title or brand.name or "Brand Content" }}</title>
     
-    /* Brand-specific color utilities */
-    .bg-brand-primary { background-color: var(--brand-primary) !important; }
-    .bg-brand-secondary { background-color: var(--brand-secondary) !important; }
-    .bg-brand-accent { background-color: var(--brand-accent) !important; }
-    .bg-brand-muted { background-color: var(--brand-muted) !important; }
-    .bg-brand-bg { background-color: var(--brand-bg) !important; }
+    <!-- Dynamic Font Loading Based on Ingested Data -->
+    {% if brand.fonts_detected %}
+        {% for font in brand.fonts_detected[:3] %}
+            {% if font and font != 'sans-serif' and font != 'serif' %}
+                {% set clean_font = font.replace('"', '').replace(',', '').replace(' ', '+') %}
+                {% if clean_font and clean_font|length > 1 %}
+                    <link href="https://fonts.googleapis.com/css2?family={{ clean_font }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
     
-    .text-brand-primary { color: var(--brand-primary) !important; }
-    .text-brand-secondary { color: var(--brand-secondary) !important; }
-    .text-brand-accent { color: var(--brand-accent) !important; }
-    .text-brand-muted { color: var(--brand-muted) !important; }
-    .text-brand-text { color: var(--brand-text) !important; }
+    <!-- Fallback to brand typography if fonts_detected is empty -->
+    {% if not brand.fonts_detected and brand.typography %}
+        {% if brand.typography.heading %}
+            <link href="https://fonts.googleapis.com/css2?family={{ brand.typography.heading.replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        {% endif %}
+        {% if brand.typography.body and brand.typography.body != brand.typography.heading %}
+            <link href="https://fonts.googleapis.com/css2?family={{ brand.typography.body.replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        {% endif %}
+    {% endif %}
     
-    /* Responsive typography scale */
-    .text-xs { font-size: 0.75rem; line-height: 1rem; }
-    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-    .text-base { font-size: 1rem; line-height: 1.5rem; }
-    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
-    .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
-    .text-2xl { font-size: 1.5rem; line-height: 2rem; }
-    .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
-    .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
-    .text-5xl { font-size: 3rem; line-height: 1; }
+    <!-- Default fallback fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    /* Font weights */
-    .font-light { font-weight: 300; }
-    .font-normal { font-weight: 400; }
-    .font-medium { font-weight: 500; }
-    .font-semibold { font-weight: 600; }
-    .font-bold { font-weight: 700; }
-    .font-extrabold { font-weight: 800; }
-    
-    /* Layout utilities */
-    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 var(--container-padding); }
-    .flex { display: flex; }
-    .flex-col { flex-direction: column; }
-    .items-center { align-items: center; }
-    .justify-center { justify-content: center; }
-    .justify-between { justify-content: space-between; }
-    .gap-1 { gap: var(--space-xs); }
-    .gap-2 { gap: var(--space-sm); }
-    .gap-4 { gap: var(--space-md); }
-    .gap-6 { gap: var(--space-lg); }
-    .gap-8 { gap: var(--space-xl); }
-    
-    /* Spacing utilities */
-    .p-1 { padding: var(--space-xs); }
-    .p-2 { padding: var(--space-sm); }
-    .p-4 { padding: var(--space-md); }
-    .p-6 { padding: var(--space-lg); }
-    .p-8 { padding: var(--space-xl); }
-    .p-10 { padding: var(--space-2xl); }
-    
-    .m-1 { margin: var(--space-xs); }
-    .m-2 { margin: var(--space-sm); }
-    .m-4 { margin: var(--space-md); }
-    .m-6 { margin: var(--space-lg); }
-    .m-8 { margin: var(--space-xl); }
-    .m-10 { margin: var(--space-2xl); }
-    
-    .mt-1 { margin-top: var(--space-xs); }
-    .mt-2 { margin-top: var(--space-sm); }
-    .mt-4 { margin-top: var(--space-md); }
-    .mt-6 { margin-top: var(--space-lg); }
-    .mt-8 { margin-top: var(--space-xl); }
-    .mt-10 { margin-top: var(--space-2xl); }
-    
-    .mb-1 { margin-bottom: var(--space-xs); }
-    .mb-2 { margin-bottom: var(--space-sm); }
-    .mb-4 { margin-bottom: var(--space-md); }
-    .mb-6 { margin-bottom: var(--space-lg); }
-    .mb-8 { margin-bottom: var(--space-xl); }
-    .mb-10 { margin-bottom: var(--space-2xl); }
-    
-    /* Component styles */
-    .card {
-      background: var(--brand-bg);
-      border: 1px solid var(--brand-muted);
-      border-radius: var(--radius-md);
-      padding: var(--space-6);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: var(--space-3) var(--space-6);
-      border-radius: var(--radius-md);
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      border: none;
-    }
-    
-    .btn-primary {
-      background: var(--brand-primary);
-      color: white;
-    }
-    
-    .btn-primary:hover {
-      background: color-mix(in srgb, var(--brand-primary) 90%, black);
-      transform: translateY(-1px);
-    }
-    
-    .btn-secondary {
-      background: var(--brand-secondary);
-      color: white;
-    }
-    
-    .btn-accent {
-      background: var(--brand-accent);
-      color: white;
-    }
-    
-    /* Header and footer */
-    .header {
-      display: flex;
-      align-items: center;
-      gap: var(--space-4);
-      padding: var(--space-6) 0;
-      border-bottom: 1px solid var(--brand-muted);
-      margin-bottom: var(--space-8);
-    }
-    
-    .header .logo {
-      height: 48px;
-      width: auto;
-    }
-    
-    .header .brand-info h1 {
-      margin: 0;
-      font-size: var(--space-6);
-      color: var(--brand-primary);
-    }
-    
-    .header .brand-info .tagline {
-      margin: 0;
-      color: var(--brand-muted);
-      font-size: var(--space-4);
-    }
-    
-    .footer {
-      margin-top: var(--space-10);
-      padding: var(--space-6) 0;
-      border-top: 1px solid var(--brand-muted);
-      text-align: center;
-      color: var(--brand-muted);
-      font-size: 0.875rem;
-    }
-    
-    /* Hero section */
-    .hero {
-      position: relative;
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      margin-bottom: var(--space-8);
-      min-height: 300px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .hero img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
-    }
-    
-    .hero-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, 
-        color-mix(in srgb, var(--brand-primary) 20%, transparent) 0%,
-        color-mix(in srgb, var(--brand-primary) 40%, transparent) 100%);
-      z-index: 2;
-    }
-    
-    .hero-content {
-      position: relative;
-      z-index: 3;
-      text-align: center;
-      color: white;
-      padding: var(--space-8);
-      max-width: 600px;
-    }
-    
-    .hero-content h1 {
-      font-size: var(--space-10);
-      margin-bottom: var(--space-4);
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-    
-    .hero-content p {
-      font-size: var(--space-5);
-      margin-bottom: var(--space-6);
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* Content sections */
-    .section {
-      margin-bottom: var(--space-8);
-    }
-    
-    .section-title {
-      font-size: var(--space-6);
-      color: var(--brand-primary);
-      margin-bottom: var(--space-4);
-      border-bottom: 2px solid var(--brand-accent);
-      padding-bottom: var(--space-2);
-    }
-    
-    .grid {
-      display: grid;
-      gap: var(--space-6);
-    }
-    
-    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-    .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-    .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
-    
-    /* Responsive design */
-    @media (max-width: 768px) {
-      .grid-cols-2, .grid-cols-3, .grid-cols-4 {
-        grid-template-columns: 1fr;
-      }
-      
-      .hero-content h1 {
-        font-size: var(--space-8);
-      }
-      
-      .hero-content p {
-        font-size: var(--space-4);
-      }
-    }
-  </style>
+    <style>
+        :root {
+            /* Dynamic Color Variables from Ingested Brand Data */
+            --brand-primary: {{ brand.colors.primary or '#0C69F5' }};
+            --brand-secondary: {{ brand.colors.secondary or '#6b7280' }};
+            --brand-accent: {{ brand.colors.accent or '#f59e0b' }};
+            --brand-muted: {{ brand.colors.muted or '#9ca3af' }};
+            --brand-bg: {{ brand.colors.bg or '#ffffff' }};
+            --brand-text: {{ brand.colors.text or '#111827' }};
+            
+            /* Dynamic Typography from Ingested Data */
+            --font-heading: {{ brand.fonts_detected[0] if brand.fonts_detected else (brand.typography.heading or 'Inter') }}, {{ brand.typography.fallbacks[0] if brand.typography.fallbacks else 'Inter' }}, system-ui, sans-serif;
+            --font-body: {{ brand.fonts_detected[1] if brand.fonts_detected and brand.fonts_detected|length > 1 else (brand.typography.body or 'Inter') }}, {{ brand.typography.fallbacks[1] if brand.typography.fallbacks and brand.typography.fallbacks|length > 1 else 'Inter' }}, system-ui, sans-serif;
+            
+            /* Dynamic Spacing from Brand Analysis */
+            {% if brand.ui_layout and brand.ui_layout.spacing_system %}
+                {% set spacing_values = brand.ui_layout.spacing_system.common_values %}
+                {% if spacing_values %}
+                    --spacing-xs: {{ spacing_values[0] if spacing_values|length > 0 else '4px' }};
+                    --spacing-sm: {{ spacing_values[1] if spacing_values|length > 1 else '8px' }};
+                    --spacing-md: {{ spacing_values[2] if spacing_values|length > 2 else '16px' }};
+                    --spacing-lg: {{ spacing_values[3] if spacing_values|length > 3 else '24px' }};
+                    --spacing-xl: {{ spacing_values[4] if spacing_values|length > 4 else '32px' }};
+                {% else %}
+                    --spacing-xs: 4px;
+                    --spacing-sm: 8px;
+                    --spacing-md: 16px;
+                    --spacing-lg: 24px;
+                    --spacing-xl: 32px;
+                {% endif %}
+            {% else %}
+                --spacing-xs: 4px;
+                --spacing-sm: 8px;
+                --spacing-md: 16px;
+                --spacing-lg: 24px;
+                --spacing-xl: 32px;
+            {% endif %}
+            
+            /* Dynamic Border Radius from Brand Analysis */
+            {% if brand.ui_layout and brand.ui_layout.component_patterns %}
+                {% set button_patterns = brand.ui_layout.component_patterns.buttons %}
+                {% if button_patterns %}
+                    --radius-sm: {{ button_patterns[0].get('border_radius', '6px') if button_patterns|length > 0 else '6px' }};
+                    --radius-md: {{ button_patterns[0].get('border_radius', '12px') if button_patterns|length > 0 else '12px' }};
+                    --radius-lg: {{ button_patterns[0].get('border_radius', '20px') if button_patterns|length > 0 else '20px' }};
+                {% else %}
+                    --radius-sm: 6px;
+                    --radius-md: 12px;
+                    --radius-lg: 20px;
+                {% endif %}
+            {% else %}
+                --radius-sm: 6px;
+                --radius-md: 12px;
+                --radius-lg: 20px;
+            {% endif %}
+            
+            /* Layout Max Width from Brand Analysis */
+            {% if brand.ui_layout and brand.ui_layout.layout_grid %}
+                {% set grid_systems = brand.ui_layout.layout_grid.grid_systems %}
+                {% if grid_systems %}
+                    --max-width: {{ grid_systems[0].get('max_width', '1200px') if grid_systems|length > 0 else '1200px' }};
+                {% else %}
+                    --max-width: 1200px;
+                {% endif %}
+            {% else %}
+                --max-width: 1200px;
+            {% endif %}
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-body);
+            line-height: 1.6;
+            color: var(--brand-text);
+            background-color: var(--brand-bg);
+            font-size: 16px;
+        }
+        
+        /* Enhanced Typography System Based on Ingested Data */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-heading);
+            font-weight: 600;
+            line-height: 1.2;
+            margin-bottom: var(--spacing-md);
+            color: var(--brand-text);
+        }
+        
+        h1 { font-size: 2.5rem; font-weight: 700; }
+        h2 { font-size: 2rem; font-weight: 600; }
+        h3 { font-size: 1.5rem; font-weight: 600; }
+        h4 { font-size: 1.25rem; font-weight: 500; }
+        h5 { font-size: 1.125rem; font-weight: 500; }
+        h6 { font-size: 1rem; font-weight: 500; }
+        
+        p {
+            margin-bottom: var(--spacing-md);
+            color: var(--brand-text);
+        }
+        
+        /* Enhanced Component System Based on Ingested Patterns */
+        .btn {
+            display: inline-block;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background-color: var(--brand-primary);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-heading);
+        }
+        
+        .btn:hover {
+            background-color: var(--brand-secondary);
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background-color: var(--brand-secondary);
+            color: white;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: var(--brand-primary);
+            border: 2px solid var(--brand-primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--brand-primary);
+            color: white;
+        }
+        
+        /* Enhanced Layout System Based on Ingested Patterns */
+        .container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 var(--spacing-md);
+        }
+        
+        .grid {
+            display: grid;
+            gap: var(--spacing-lg);
+        }
+        
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+        
+        .flex {
+            display: flex;
+        }
+        
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        
+        /* Enhanced Spacing System Based on Ingested Data */
+        .space-y-2 > * + * { margin-top: var(--spacing-sm); }
+        .space-y-3 > * + * { margin-top: var(--spacing-md); }
+        .space-y-4 > * + * { margin-top: var(--spacing-lg); }
+        .space-y-6 > * + * { margin-top: var(--spacing-xl); }
+        
+        .gap-3 { gap: var(--spacing-md); }
+        .gap-4 { gap: var(--spacing-lg); }
+        .gap-6 { gap: var(--spacing-xl); }
+        
+        .p-4 { padding: var(--spacing-lg); }
+        .p-6 { padding: var(--spacing-xl); }
+        .p-8 { padding: calc(var(--spacing-xl) * 2); }
+        
+        .m-4 { margin: var(--spacing-lg); }
+        .m-6 { margin: var(--spacing-xl); }
+        .m-8 { margin: calc(var(--spacing-xl) * 2); }
+        
+        .mb-4 { margin-bottom: var(--spacing-lg); }
+        .mb-6 { margin-bottom: var(--spacing-xl); }
+        .mb-8 { margin-bottom: calc(var(--spacing-xl) * 2); }
+        
+        .mt-4 { margin-top: var(--spacing-lg); }
+        .mt-6 { margin-top: var(--spacing-xl); }
+        .mt-8 { margin-top: calc(var(--spacing-xl) * 2); }
+        
+        /* Enhanced Card System Based on Ingested Patterns */
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        
+        /* Enhanced Section System Based on Ingested Layout */
+        .section {
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--brand-primary);
+            margin-bottom: var(--spacing-md);
+            text-align: center;
+        }
+        
+        /* Enhanced Text Utilities Based on Ingested Typography */
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        
+        .text-sm { font-size: 0.875rem; }
+        .text-base { font-size: 1rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .text-4xl { font-size: 2.25rem; }
+        
+        .font-light { font-weight: 300; }
+        .font-normal { font-weight: 400; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        
+        /* Enhanced Color Utilities Based on Ingested Palette */
+        .text-brand-primary { color: var(--brand-primary); }
+        .text-brand-secondary { color: var(--brand-secondary); }
+        .text-brand-accent { color: var(--brand-accent); }
+        .text-brand-muted { color: var(--brand-muted); }
+        .text-brand-bg { color: var(--brand-bg); }
+        
+        .bg-brand-primary { background-color: var(--brand-primary); }
+        .bg-brand-secondary { background-color: var(--brand-secondary); }
+        .bg-brand-accent { background-color: var(--brand-accent); }
+        .bg-brand-muted { background-color: var(--brand-muted); }
+        .bg-brand-bg { background-color: var(--brand-bg); }
+        
+        /* Responsive Design Based on Ingested Breakpoints */
+        {% if brand.ui_layout and brand.ui_layout.responsive_breakpoints %}
+            {% for breakpoint in brand.ui_layout.responsive_breakpoints %}
+                @media (max-width: {{ breakpoint }}px) {
+                    .container { padding: 0 var(--spacing-sm); }
+                    .grid-cols-3, .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+                    h1 { font-size: 2rem; }
+                    h2 { font-size: 1.75rem; }
+                }
+            {% endfor %}
+        {% else %}
+            @media (max-width: 768px) {
+                .container { padding: 0 var(--spacing-sm); }
+                .grid-cols-3, .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+                h1 { font-size: 2rem; }
+                h2 { font-size: 1.75rem; }
+            }
+        {% endif %}
+        
+        @media (max-width: 480px) {
+            .grid-cols-2, .grid-cols-3, .grid-cols-4 { grid-template-columns: 1fr; }
+            h1 { font-size: 1.75rem; }
+            h2 { font-size: 1.5rem; }
+        }
+    </style>
 </head>
-<body style="font-family: var(--font-body); background: var(--brand-bg); color: var(--brand-text); line-height: 1.6; margin: 0; padding: 0;">
+<body>
+    <header class="bg-brand-primary text-white p-6">
   <div class="container">
-    <!-- Dynamic Header with Brand Integration -->
-    <header class="header">
-      {% if brand.logo_path_public %}
-        <img class="logo" src="{{ brand.logo_path_public }}" alt="{{ brand.name }} logo"/>
-      {% endif %}
-      <div class="brand-info">
-        <h1 class="text-brand-primary font-bold">{{ brand.name }}</h1>
-        {% if brand.tagline %}
-          <p class="tagline">{{ brand.tagline }}</p>
-        {% endif %}
-        {% if brand.website %}
-          <p class="text-sm text-brand-muted">{{ brand.website }}</p>
-        {% endif %}
+            <div class="flex justify-between items-center">
+      <div>
+                    <h1 class="text-2xl font-bold">{{ brand.name or "Brand" }}</h1>
+                    {% if brand.website %}
+                        <p class="text-sm opacity-90">{{ brand.website }}</p>
+                    {% endif %}
+                </div>
+                <div class="text-right">
+                    {% if brand.tone %}
+                        <p class="text-sm opacity-90">Tone: {{ brand.tone }}</p>
+                    {% endif %}
+                    {% if brand.keywords %}
+                        <p class="text-sm opacity-90">Keywords: {{ brand.keywords[:3]|join(', ') }}</p>
+                    {% endif %}
+                </div>
       </div>
+    </div>
     </header>
     
-    <!-- Main Content Area -->
-    <main>
-      {% block content %}{% endblock %}
+    <main class="container py-8">
+    {% block content %}{% endblock %}
     </main>
     
-    <!-- Dynamic Footer with Brand Integration -->
-    <footer class="footer">
-      <div class="flex items-center justify-center gap-4">
-        <span>© {{ brand.name }}</span>
-        {% if brand.website %}
-          <span>•</span>
-          <a href="{{ brand.website }}" class="text-brand-primary hover:underline">{{ brand.website }}</a>
-        {% endif %}
-        {% if brand.tone %}
-          <span>•</span>
-          <span class="text-brand-muted">{{ brand.tone }}</span>
-        {% endif %}
-      </div>
-      {% if brand.keywords %}
-        <div class="mt-4">
-          <div class="flex items-center justify-center gap-2 flex-wrap">
-            {% for keyword in brand.keywords[:5] %}
-              <span class="px-2 py-1 bg-brand-muted text-brand-bg text-xs rounded-full">{{ keyword }}</span>
-            {% endfor %}
-          </div>
-        </div>
-      {% endif %}
-    </footer>
+    <footer class="bg-brand-muted text-brand-text p-6 mt-8">
+        <div class="container text-center">
+            <p>&copy; {{ brand.name or "Brand" }}. All rights reserved.</p>
+            {% if brand.website %}
+                <p class="text-sm mt-2">Visit us at <a href="{{ brand.website }}" class="text-brand-primary hover:underline">{{ brand.website }}</a></p>
+            {% endif %}
   </div>
+    </footer>
 </body>
 </html>

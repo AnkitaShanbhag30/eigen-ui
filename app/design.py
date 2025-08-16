@@ -135,47 +135,214 @@ Brand Context:
             "heroBrief": "Minimal abstract background with subtle geometric shapes, professional business aesthetic"
         }
     
-    def generate_content_outline(self, brand: BrandIdentity, template: str, x: str, y: str, z: str, w: str) -> Dict[str, Any]:
-        """Generate content outline using LLM with UI/layout data integration"""
-        word_count_bands = {
-            'onepager': '400-700',
-            'newsletter': '450-900',
-            'blogpost': '800-1200'
+    def generate_content_outline(self, template: str, x: str, y: str, z: str, w: str, cta: str, brand: BrandIdentity) -> Dict[str, Any]:
+        """Generate content outline using brand insights and UI/layout data"""
+        try:
+            # Extract UI/layout insights for content generation
+            ui_insights = self._extract_ui_insights_for_content(brand)
+            
+            # Create enhanced system prompt using brand data
+            system_prompt = self._create_enhanced_system_prompt(brand, ui_insights)
+            
+            # Create enhanced user prompt with brand context
+            user_prompt = self._create_enhanced_user_prompt(template, x, y, z, w, cta, brand, ui_insights)
+            
+            # Generate content using LLM
+            response = self.llm.generate_json(system_prompt, user_prompt)
+            
+            if response and isinstance(response, dict):
+                # Validate and enhance the response
+                enhanced_outline = self._enhance_outline_with_brand_data(response, brand, ui_insights)
+                return enhanced_outline
+            else:
+                # Fallback to UI-aware default outline
+                return self._get_default_outline_with_ui(template, x, y, z, w, ui_insights)
+                
+        except Exception as e:
+            print(f"Content generation failed: {e}")
+            # Fallback to UI-aware default outline
+            ui_insights = self._extract_ui_insights_for_content(brand)
+            return self._get_default_outline_with_ui(template, x, y, z, w, ui_insights)
+    
+    def _create_enhanced_system_prompt(self, brand: BrandIdentity, ui_insights: Dict[str, Any]) -> str:
+        """Create an enhanced system prompt that leverages brand data"""
+        return f"""You are a senior brand strategist and content creator. Your task is to create content that perfectly matches the brand's visual identity, tone, and design patterns.
+
+BRAND IDENTITY:
+- Name: {brand.name}
+- Website: {brand.website}
+- Tone: {brand.tone}
+- Keywords: {', '.join(brand.keywords[:15])}
+
+VISUAL DESIGN PATTERNS:
+- Primary Color: {brand.colors.primary or 'Not specified'}
+- Secondary Color: {brand.colors.secondary or 'Not specified'}
+- Accent Colors: {', '.join(brand.colors.palette[:5]) if brand.colors.palette else 'Not specified'}
+- Detected Fonts: {', '.join(brand.fonts_detected[:5]) if brand.fonts_detected else 'Not specified'}
+
+UI/LAYOUT INSIGHTS:
+- Layout Style: {ui_insights.get('layout_style', 'standard')}
+- Content Structure: {ui_insights.get('content_structure', {}).get('section_count', 3)} sections detected
+- Visual Hierarchy: {', '.join(ui_insights.get('visual_hierarchy', {}).get('heading_levels', ['h1', 'h2', 'h3']))}
+- Component Patterns: {', '.join(ui_insights.get('component_preferences', {}).get('button_styles', ['standard']))}
+
+INSTRUCTIONS:
+1. Use the brand's exact tone and keywords
+2. Match the detected layout patterns and section count
+3. Incorporate the brand's color psychology and visual hierarchy
+4. Create content that feels native to the brand's website
+5. Use the detected component patterns (cards, grids, lists) appropriately
+6. Ensure content flows with the brand's visual rhythm and spacing
+
+Return ONLY valid JSON matching this exact schema:
+{{
+  "headline": "Compelling headline (5-8 words) that matches brand tone",
+  "subhead": "Supporting subtitle explaining the value proposition",
+  "sections": [
+    {{
+      "title": "Section title",
+      "bullets": ["Key point 1", "Key point 2", "Key point 3"],
+      "content_type": "problem|solution|benefits|features|testimonials|cta",
+      "layout_style": "text|card|grid|list|hero",
+      "visual_emphasis": "high|medium|low"
+    }}
+  ],
+  "cta": "Clear call to action that matches brand voice",
+  "meta": {{
+    "seoTitle": "SEO-optimized title",
+    "seoDesc": "SEO description using brand keywords",
+    "tags": ["relevant", "brand", "keywords"],
+    "layout_variant": "A|B|C",
+    "color_scheme": "primary|secondary|accent|muted"
+  }}
+}}"""
+    
+    def _create_enhanced_user_prompt(self, template: str, x: str, y: str, z: str, w: str, cta: str, brand: BrandIdentity, ui_insights: Dict[str, Any]) -> str:
+        """Create an enhanced user prompt with comprehensive brand context"""
+        return f"""Create content for a {template} that perfectly embodies the brand identity.
+
+CONTENT REQUIREMENTS:
+- What we're building: {x}
+- Why it matters: {y}
+- Target audience: {z}
+- Additional context: {w}
+- Call to action: {cta}
+
+BRAND CONTEXT:
+- Brand voice: {brand.tone}
+- Target keywords: {', '.join(brand.keywords[:10])}
+- Business focus: {brand.description or 'Not specified'}
+
+DESIGN INTEGRATION:
+- Use {ui_insights.get('content_structure', {}).get('section_count', 3)} sections to match the brand's content structure
+- Apply {ui_insights.get('layout_style', 'standard')} layout principles
+- Incorporate {', '.join(ui_insights.get('component_preferences', {}).get('button_styles', ['standard']))} button styles
+- Use {', '.join(ui_insights.get('visual_hierarchy', {}).get('heading_levels', ['h1', 'h2', 'h3']))} heading hierarchy
+
+The content should feel like it was written by the brand team and designed by the brand's designers. Every element should reflect the brand's visual identity and user experience patterns."""
+    
+    def _enhance_outline_with_brand_data(self, outline: Dict[str, Any], brand: BrandIdentity, ui_insights: Dict[str, Any]) -> Dict[str, Any]:
+        """Enhance the generated outline with additional brand-specific data"""
+        enhanced = outline.copy()
+        
+        # Add brand-specific metadata
+        enhanced['brand_context'] = {
+            'name': brand.name,
+            'website': brand.website,
+            'tone': brand.tone,
+            'primary_color': brand.colors.primary,
+            'secondary_color': brand.colors.secondary,
+            'accent_colors': brand.colors.palette[:5] if brand.colors.palette else []
         }
         
-        word_count = word_count_bands.get(template, '400-700')
+        # Enhance sections with brand-specific styling
+        if 'sections' in enhanced:
+            for section in enhanced['sections']:
+                # Add content type if not present
+                if 'content_type' not in section:
+                    section['content_type'] = self._detect_content_type_from_title(section.get('title', ''))
+                
+                # Add layout style based on content type and brand patterns
+                if 'layout_style' not in section:
+                    section['layout_style'] = self._get_optimal_layout_style(section['content_type'], ui_insights)
+                
+                # Add visual emphasis based on brand hierarchy
+                if 'visual_emphasis' not in section:
+                    section['visual_emphasis'] = self._get_visual_emphasis(section['content_type'])
         
-        # Extract UI/layout insights for content structure
-        ui_insights = self._extract_ui_insights_for_content(brand)
+        # Add meta information
+        if 'meta' not in enhanced:
+            enhanced['meta'] = {}
         
-        system_prompt = """You are a precise marketing writer who creates content that matches the brand's visual design patterns and layout structure. Obey the BrandIdentity voice strictly. Avoid clichés and filler. Keep claims factual. Write for the specified audience Z. Use the UI/layout insights to create content that feels authentic to the brand's design language. Output ONLY valid JSON that matches the required schema."""
+        enhanced['meta'].update({
+            'layout_variant': ui_insights.get('layout_style', 'A'),
+            'color_scheme': self._get_color_scheme_from_brand(brand),
+            'typography_pair': f"{brand.typography.heading or 'Inter'} + {brand.typography.body or 'Inter'}",
+            'brand_keywords': brand.keywords[:8]
+        })
         
-        user_prompt = f"""Brand Identity: {json.dumps(brand.dict(), indent=2)}
-
-UI/Layout Insights: {json.dumps(ui_insights, indent=2)}
-
-Template: {template}
-X (What we're building): {x}
-Y (Why it matters): {y}
-Z (Target audience): {z}
-W (Additional context): {w}
-
-Word count target: {word_count} words
-
-Use the UI/layout insights to:
-1. Structure content sections based on detected design patterns
-2. Match the brand's visual hierarchy and spacing preferences
-3. Incorporate component patterns (cards, grids, buttons) naturally
-4. Follow the brand's content organization style
-
-Return ONLY the JSON object with fields {{headline, subhead?, sections[{{title,bullets[],content_type?,layout_style?}}], cta, meta{{seoTitle,seoDesc,tags[]}}}}. No prose."""
+        return enhanced
+    
+    def _detect_content_type_from_title(self, title: str) -> str:
+        """Detect content type from section title"""
+        title_lower = title.lower()
         
-        try:
-            response = self.llm.generate_json(system_prompt, user_prompt)
-            return response
-        except Exception as e:
-            print(f"Content outline generation failed: {e}")
-            return self._get_default_outline_with_ui(template, x, y, z, w, ui_insights)
+        if any(word in title_lower for word in ['challenge', 'problem', 'issue']):
+            return 'problem'
+        elif any(word in title_lower for word in ['solution', 'approach', 'method']):
+            return 'solution'
+        elif any(word in title_lower for word in ['benefit', 'advantage', 'feature']):
+            return 'benefits'
+        elif any(word in title_lower for word in ['testimonial', 'review', 'quote']):
+            return 'testimonials'
+        elif any(word in title_lower for word in ['contact', 'start', 'get']):
+            return 'cta'
+        else:
+            return 'general'
+    
+    def _get_optimal_layout_style(self, content_type: str, ui_insights: Dict[str, Any]) -> str:
+        """Get optimal layout style based on content type and brand patterns"""
+        layout_mapping = {
+            'problem': 'text',
+            'solution': 'card',
+            'benefits': 'grid',
+            'features': 'grid',
+            'testimonials': 'card',
+            'cta': 'hero'
+        }
+        
+        # Use brand's preferred layout if available
+        brand_layout = ui_insights.get('layout_style', 'standard')
+        
+        if brand_layout == 'grid-based' and content_type in ['benefits', 'features']:
+            return 'grid'
+        elif brand_layout == 'card-based' and content_type in ['solution', 'testimonials']:
+            return 'card'
+        else:
+            return layout_mapping.get(content_type, 'text')
+    
+    def _get_visual_emphasis(self, content_type: str) -> str:
+        """Get visual emphasis level based on content type"""
+        emphasis_mapping = {
+            'problem': 'high',
+            'solution': 'high',
+            'benefits': 'medium',
+            'features': 'medium',
+            'testimonials': 'low',
+            'cta': 'high'
+        }
+        return emphasis_mapping.get(content_type, 'medium')
+    
+    def _get_color_scheme_from_brand(self, brand: BrandIdentity) -> str:
+        """Get color scheme recommendation based on brand colors"""
+        if brand.colors.primary and brand.colors.secondary:
+            return 'primary'
+        elif brand.colors.accent:
+            return 'accent'
+        elif brand.colors.palette:
+            return 'palette'
+        else:
+            return 'neutral'
     
     def _extract_ui_insights_for_content(self, brand: BrandIdentity) -> Dict[str, Any]:
         """Extract UI/layout insights that should influence content generation"""

@@ -1,220 +1,146 @@
 {% extends "base.html.j2" %}
 
 {% block content %}
-  <!-- Hero Section - Dynamic based on user inputs and brand data -->
-  {% if hero_url or custom_data.hero_url %}
-    <section class="hero">
-      <img src="{{ hero_url or custom_data.hero_url }}" alt="Hero image for {{ title or outline.headline or brand.name }}"/>
-      <div class="hero-overlay"></div>
-      <div class="hero-content">
-        <h1 class="font-bold">{{ title or outline.headline or brand.name }}</h1>
-        {% if subtitle or outline.subhead %}
-          <p>{{ subtitle or outline.subhead }}</p>
+<!-- Hero Section with Brand-Integrated Styling -->
+<section class="hero bg-gradient-to-br from-brand-primary to-brand-secondary text-white p-8 rounded-3xl mb-8">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold mb-4">{{ outline.headline or custom_data.title or "Your Compelling Headline" }}</h1>
+        {% if outline.subhead or custom_data.subtitle %}
+            <p class="text-xl mb-6 opacity-90">{{ outline.subhead or custom_data.subtitle }}</p>
         {% endif %}
-        {% if cta or outline.cta %}
-          <a href="#" class="btn btn-primary">{{ cta or outline.cta }}</a>
-        {% endif %}
-      </div>
-    </section>
-  {% else %}
-    <!-- Text-only hero when no image -->
-    <section class="text-center mb-10">
-      <h1 class="text-5xl font-bold text-brand-primary mb-4">
-        {{ title or outline.headline or brand.name }}
-      </h1>
-      {% if subtitle or outline.subhead %}
-        <p class="text-xl text-brand-muted mb-6 max-w-2xl mx-auto">
-          {{ subtitle or outline.subhead }}
-        </p>
-      {% endif %}
-      {% if cta or outline.cta %}
-        <a href="#" class="btn btn-primary text-lg px-8 py-4">{{ cta or outline.cta }}</a>
-      {% endif %}
-    </section>
-  {% endif %}
-
-  <!-- Brand Overview Section - Dynamic from brand data -->
-  {% if brand.description or brand.tagline or brand.keywords %}
-    <section class="section">
-      <h2 class="section-title">About {{ brand.name }}</h2>
-      <div class="card">
-        {% if brand.description %}
-          <p class="mb-4">{{ brand.description }}</p>
-        {% endif %}
-        {% if brand.tagline %}
-          <p class="text-lg font-medium text-brand-secondary mb-4">{{ brand.tagline }}</p>
-        {% endif %}
-        {% if brand.keywords %}
-          <div class="flex gap-2 flex-wrap">
-            {% for keyword in brand.keywords[:8] %}
-              <span class="px-3 py-1 bg-brand-accent text-white text-sm rounded-full font-medium">
-                {{ keyword }}
-              </span>
-            {% endfor %}
-          </div>
-        {% endif %}
-      </div>
-    </section>
-  {% endif %}
-
-  <!-- Dynamic Content Sections - From user inputs or generated outline -->
-  {% if outline and outline.sections %}
-    {% for outline_section in outline.sections %}
-      <section class="section">
-        <h2 class="section-title">{{ outline_section.title }}</h2>
         
-        <!-- Use brand's UI patterns to determine layout -->
-        {% set section_layout = outline_section.layout_style or 'default' %}
-        {% set content_type = outline_section.content_type or 'general' %}
-        
-        {% if section_layout == 'card' or content_type in ['solution', 'benefits'] %}
-          <!-- Card-based layout for solutions and benefits -->
-          <div class="card">
-            {% if outline_section.bullets and outline_section.bullets|length > 0 %}
-              <ul class="space-y-2">
-                {% for bullet in outline_section.bullets %}
-                  <li class="flex items-start gap-3">
-                    <span class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></span>
-                    <span>{{ bullet }}</span>
-                  </li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-            {% if outline_section.content %}
-              <p>{{ outline_section.content }}</p>
-            {% endif %}
-          </div>
-        {% elif section_layout == 'grid' or content_type in ['features', 'metrics'] %}
-          <!-- Grid layout for features and metrics -->
-          {% if outline_section.bullets and outline_section.bullets|length > 0 %}
-            <div class="grid grid-cols-{{ outline_section.bullets|length if outline_section.bullets|length <= 4 else 4 }} gap-6">
-              {% for bullet in outline_section.bullets %}
-                <div class="card text-center">
-                  <div class="text-3xl font-bold text-brand-primary mb-2">{{ bullet }}</div>
-                  <div class="text-brand-muted text-sm">Feature {{ loop.index }}</div>
-                </div>
-              {% endfor %}
-            </div>
-          {% elif outline_section.items and outline_section.items|length > 0 %}
-            <!-- Grid layout for custom items -->
-            <div class="grid grid-cols-{{ outline_section.columns or 3 }} gap-6">
-              {% for item in outline_section.items %}
-                <div class="card text-center">
-                  {% if item.icon %}
-                    <div class="text-4xl mb-4">{{ item.icon }}</div>
-                  {% endif %}
-                  {% if item.title %}
-                    <h3 class="text-xl font-semibold text-brand-primary mb-2">{{ item.title }}</h3>
-                  {% endif %}
-                  {% if item.value %}
-                    <div class="text-3xl font-bold text-brand-secondary mb-2">{{ item.value }}</div>
-                  {% endif %}
-                  {% if item.description %}
-                    <p class="text-brand-muted">{{ item.description }}</p>
-                  {% endif %}
-                </div>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% elif section_layout == 'list' or content_type in ['differentiation', 'steps'] %}
-          <!-- List layout for differentiation and steps -->
-          {% if outline_section.bullets and outline_section.bullets|length > 0 %}
-            <div class="space-y-4">
-              {% for bullet in outline_section.bullets %}
-                <div class="flex items-start gap-4 p-4 bg-brand-muted bg-opacity-10 rounded-lg">
-                  <div class="w-6 h-6 bg-brand-accent text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    {{ loop.index }}
-                  </div>
-                  <div>{{ bullet }}</div>
-                </div>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% else %}
-          <!-- Default layout -->
-          {% if outline_section.bullets and outline_section.bullets|length > 0 %}
-            <div class="card">
-              <ul class="space-y-2">
-                {% for bullet in outline_section.bullets %}
-                  <li class="flex items-start gap-3">
-                    <span class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></span>
-                    <span>{{ bullet }}</span>
-                  </li>
-                {% endfor %}
-              </ul>
-            </div>
-          {% endif %}
-          {% if outline_section.content %}
-            <div class="card">
-              <p>{{ outline_section.content }}</p>
-            </div>
-          {% endif %}
+        <!-- Dynamic CTA Button Based on Brand Patterns -->
+        {% if outline.cta or custom_data.cta %}
+            <a href="#" class="btn bg-white text-brand-primary hover:bg-gray-100 text-lg px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+                {{ outline.cta or custom_data.cta }}
+            </a>
         {% endif %}
-      </section>
+        
+        <!-- Brand Context Display -->
+        {% if outline.meta and outline.meta.tags %}
+            <div class="mt-6 flex justify-center gap-2 flex-wrap">
+                {% for tag in outline.meta.tags[:5] %}
+                    <span class="px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full">{{ tag }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Dynamic Content Sections Based on Brand Analysis -->
+{% if outline and outline.sections and outline.sections|length > 0 %}
+    {% for section_data in outline.sections %}
+        {% if section_data.title and section_data.bullets and section_data.bullets|length > 0 %}
+            <section class="section">
+                <h2 class="section-title">{{ section_data.title }}</h2>
+                
+                <!-- Dynamic Layout Based on Content Type and Brand Patterns -->
+                {% if section_data.layout_style == 'grid' %}
+                    <!-- Grid Layout for Benefits/Features -->
+                    <div class="grid grid-cols-2 gap-6">
+                        {% for bullet in section_data.bullets %}
+                            <div class="card text-center">
+                                <div class="text-brand-primary text-2xl mb-2">✨</div>
+                                <p class="font-medium">{{ bullet }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% elif section_data.layout_style == 'card' %}
+                    <!-- Card Layout for Solutions/Testimonials -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {% for bullet in section_data.bullets %}
+                            <div class="card border-l-4 border-brand-accent">
+                                <p class="text-lg">{{ bullet }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% elif section_data.layout_style == 'list' %}
+                    <!-- List Layout for General Content -->
+                    <ul class="space-y-3">
+                        {% for bullet in section_data.bullets %}
+                            <li class="flex items-start gap-3">
+                                <div class="w-2 h-2 bg-brand-accent rounded-full mt-2 flex-shrink-0"></div>
+                                <p>{{ bullet }}</p>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <!-- Default Text Layout -->
+                    <div class="space-y-3">
+                        {% for bullet in section_data.bullets %}
+                            <p class="text-lg">{{ bullet }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Additional Content if Available -->
+                {% if section_data.content %}
+                    <div class="mt-6 p-4 bg-brand-muted bg-opacity-10 rounded-lg">
+                        {{ section_data.content }}
+                    </div>
+                {% endif %}
+            </section>
+        {% endif %}
     {% endfor %}
-  {% endif %}
+{% endif %}
 
-  <!-- Call to Action Section -->
-  {% if cta or outline.cta or custom_data.cta %}
-    <section class="section text-center">
-      <div class="card bg-brand-primary text-white">
-        <h2 class="text-2xl font-bold mb-4">Ready to Get Started?</h2>
-        <p class="text-lg mb-6 opacity-90">
-          Take the next step towards achieving your goals.
-        </p>
-        <a href="#" class="btn bg-white text-brand-primary hover:bg-gray-100 px-8 py-4 text-lg">
-          {{ cta or outline.cta or custom_data.cta or "Get Started" }}
+<!-- Brand-Integrated Call-to-Action Section -->
+<section class="section text-center bg-gradient-to-r from-brand-primary to-brand-secondary text-white p-8 rounded-2xl">
+    <h2 class="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+    <p class="text-lg mb-6 opacity-90">
+        Take the next step towards achieving your goals.
+    </p>
+    
+    <!-- Dynamic CTA Based on Brand Patterns -->
+    <div class="flex justify-center gap-4 flex-wrap">
+        <a href="#" class="btn bg-white text-brand-primary hover:bg-gray-100 px-8 py-4 rounded-full font-semibold shadow-lg">
+            {{ outline.cta or custom_data.cta or "Get Started Today" }}
         </a>
-      </div>
-    </section>
-  {% endif %}
-
-  <!-- Contact/Footer Section - Dynamic from brand data -->
-  {% if brand.website or custom_data.contact %}
-    <section class="section">
-      <h2 class="section-title">Get in Touch</h2>
-      <div class="card text-center">
-        <p class="text-lg mb-4">
-          Ready to learn more about how {{ brand.name }} can help you?
-        </p>
-        <div class="flex gap-4 justify-center">
-          {% if brand.website %}
-            <a href="{{ brand.website }}" class="btn btn-secondary">
-              Visit Website
+        
+        <!-- Secondary CTA if Brand Supports Multiple Actions -->
+        {% if brand.ui_layout and brand.ui_layout.component_patterns and brand.ui_layout.component_patterns.buttons|length > 1 %}
+            <a href="#" class="btn btn-outline border-white text-white hover:bg-white hover:text-brand-primary px-8 py-4 rounded-full font-semibold">
+                Learn More
             </a>
-          {% endif %}
-          {% if custom_data.contact %}
-            <a href="mailto:{{ custom_data.contact }}" class="btn btn-accent">
-              Contact Us
-            </a>
-          {% endif %}
+        {% endif %}
+    </div>
+    
+    <!-- Brand Trust Indicators -->
+    {% if brand.keywords %}
+        <div class="mt-8 flex justify-center gap-4 flex-wrap">
+            {% for keyword in brand.keywords[:4] %}
+                <span class="px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full">{{ keyword }}</span>
+            {% endfor %}
         </div>
-      </div>
-    </section>
-  {% endif %}
+    {% endif %}
+</section>
 
-  <!-- Brand Design Patterns Showcase (if available) -->
-  {% if brand.ui_layout and brand.ui_layout.design_patterns %}
-    <section class="section">
-      <h2 class="section-title">Design Patterns</h2>
-      <div class="grid grid-cols-{{ brand.ui_layout.design_patterns|length if brand.ui_layout.design_patterns|length <= 3 else 3 }} gap-6">
-        {% for pattern in brand.ui_layout.design_patterns[:3] %}
-          <div class="card text-center">
-            <div class="text-2xl mb-2">
-              {% if pattern.type == 'grid' %}📊
-              {% elif pattern.type == 'card' %}🃏
-              {% elif pattern.type == 'hero' %}🎯
-              {% elif pattern.type == 'navigation' %}🧭
-              {% else %}✨{% endif %}
-            </div>
-            <h3 class="text-lg font-semibold text-brand-primary mb-2">{{ pattern.type|title }}</h3>
-            <p class="text-sm text-brand-muted">{{ pattern.layout_type|title }} layout</p>
-            {% if pattern.elements %}
-              <p class="text-xs text-brand-muted mt-2">{{ pattern.elements|length }} elements</p>
+<!-- Brand Analysis Summary (Optional) -->
+{% if brand.ui_layout and brand.ui_layout.design_patterns and brand.ui_layout.design_patterns|length >= 2 %}
+    <section class="section bg-gray-50 p-6 rounded-lg">
+        <h3 class="text-xl font-semibold text-center mb-4 text-brand-primary">Design System Insights</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            {% if brand.ui_layout.layout_style %}
+                <div class="text-center">
+                    <div class="font-medium text-brand-secondary">Layout Style</div>
+                    <div>{{ brand.ui_layout.layout_style }}</div>
+                </div>
             {% endif %}
-          </div>
-        {% endfor %}
-      </div>
+            
+            {% if brand.ui_layout.content_structure and brand.ui_layout.content_structure.section_count %}
+                <div class="text-center">
+                    <div class="font-medium text-brand-secondary">Content Sections</div>
+                    <div>{{ brand.ui_layout.content_structure.section_count }} detected</div>
+                </div>
+            {% endif %}
+            
+            {% if brand.ui_layout.component_patterns and brand.ui_layout.component_patterns.buttons and brand.ui_layout.component_patterns.buttons|length > 0 %}
+                <div class="text-center">
+                    <div class="font-medium text-brand-secondary">Button Patterns</div>
+                    <div>{{ brand.ui_layout.component_patterns.buttons|length }} variants</div>
+                </div>
+            {% endif %}
+        </div>
     </section>
-  {% endif %}
+{% endif %}
 {% endblock %}

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ headline or "PDP, but smarter" }}</title>
+    
+    <!-- Dynamic Font Loading -->
+    {% if brand.fonts_detected %}
+        {% for font in brand.fonts_detected[:2] %}
+            <link href="https://fonts.googleapis.com/css2?family={{ font|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        {% endfor %}
+    {% else %}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% endif %}
+    
+    <style>
+        :root {
+            /* Dynamic Color Variables from Theme */
+            --bg: {{ theme.tokens.bg }};
+            --surface: {{ theme.tokens.surface }};
+            --text: {{ theme.tokens.text }};
+            --text-muted: {{ theme.tokens['text-muted'] }};
+            --brand-500: {{ theme.tokens['brand-500'] }};
+            --brand-700: {{ theme.tokens['brand-700'] }};
+            --accent-500: {{ theme.tokens['accent-500'] }};
+            --accent-700: {{ theme.tokens['accent-700'] }};
+            --muted: {{ theme.tokens.muted }};
+            --cta-bg: {{ theme.pairs.cta_bg }};
+            --cta-fg: {{ theme.pairs.cta_fg }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.4;
+            color: var(--text);
+            background-color: var(--surface);
+            font-size: 16px;
+            overflow: hidden;
+        }
+        
+        /* Story Container - 9:16 Aspect Ratio */
+        .story-container {
+            width: 1080px;
+            height: 1920px;
+            margin: 0 auto;
+            position: relative;
+            background: linear-gradient(135deg, var(--surface), var(--muted));
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 96px;
+        }
+        
+        /* Header Section */
+        .story-header {
+            text-align: left;
+            margin-bottom: 64px;
+        }
+        
+        .story-header h1 {
+            font-size: 4.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--brand-500);
+            margin-bottom: 32px;
+            max-width: 80%;
+        }
+        
+        .story-header p {
+            font-size: 2rem;
+            color: var(--text-muted);
+            max-width: 90%;
+            line-height: 1.3;
+        }
+        
+        /* Hero Image Section */
+        .hero-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 32px 0;
+        }
+        
+        .hero-visual {
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(135deg, var(--bg), var(--surface));
+            border-radius: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .hero-visual::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, var(--brand-500), var(--accent-500));
+            opacity: 0.08;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            color: var(--brand-700);
+        }
+        
+        .hero-content h3 {
+            font-size: 2.5rem;
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+        
+        .hero-content p {
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            margin-top: 32px;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background-color: var(--cta-bg);
+            color: var(--cta-fg);
+            padding: 24px 48px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.75rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .cta-button:hover {
+            background-color: var(--brand-700);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Footer Section */
+        .story-footer {
+            text-align: center;
+            margin-top: 32px;
+        }
+        
+        .brand-name {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            opacity: 0.75;
+            font-weight: 500;
+        }
+        
+        /* PDP-specific elements */
+        .pdp-features {
+            position: absolute;
+            top: 50%;
+            right: 48px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .feature-chip {
+            background-color: var(--brand-500);
+            color: var(--cta-fg);
+            padding: 12px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            white-space: nowrap;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-chip:nth-child(2) {
+            background-color: var(--accent-500);
+        }
+        
+        .feature-chip:nth-child(3) {
+            background-color: var(--muted);
+            color: var(--brand-700);
+        }
+    </style>
+</head>
+<body>
+    <div class="story-container">
+        <!-- Header Section -->
+        <div class="story-header">
+            <h1>{{ headline or "PDP, but smarter." }}</h1>
+            <p>{{ subhead or "Suggests conversion-driving questions. Non-salesy, FDA/meta aware." }}</p>
+        </div>
+        
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="hero-visual">
+                <div class="hero-content">
+                    <h3>{{ brand.name or "Brand" }}</h3>
+                    <p>AI-Powered Product Pages</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- PDP Features -->
+        <div class="pdp-features">
+            <div class="feature-chip">Smart Questions</div>
+            <div class="feature-chip">FDA Compliant</div>
+            <div class="feature-chip">Meta Ready</div>
+        </div>
+        
+        <!-- CTA Section -->
+        <div class="cta-section">
+            <a href="#" class="cta-button">{{ cta or "Learn More" }}</a>
+        </div>
+        
+        <!-- Footer -->
+        <div class="story-footer">
+            <div class="brand-name">{{ brand.name or "Brand" }}</div>
+        </div>
+    </div>
+</body>
+</html>

@@ -19,38 +19,31 @@ def _font_links(heading, body):
     return link_for(heading) + link_for(body)
 
 def outline_for(template: str, brand: Dict, x: str, y: str, z: str, w: str, cta: str) -> Dict:
-    sys = """You are a precise marketing writer. Create compelling content that converts.
-Return ONLY valid JSON matching this exact schema:
-{
-  "headline": "Compelling headline (5-8 words)",
-  "subhead": "Supporting subtitle explaining the value proposition",
-  "sections": [
-    {
-      "title": "Section title",
-      "bullets": ["Key point 1", "Key point 2", "Key point 3"]
-    }
-  ],
-  "cta": "Clear call to action"
-}"""
-    
-    user = f"""Create content for a {template} about:
-- What we're building: {x}
-- Why it matters: {y}  
-- Target audience: {z}
-- Additional context: {w}
-- Brand tone: {brand.get('tone', 'professional')}
-- Brand keywords: {', '.join(brand.get('keywords', [])[:8])}
-
-Make it compelling, specific, and actionable. Focus on benefits and clear value propositions."""
-    
+    """Generate content outline using enhanced brand-aware system"""
     try:
-        result = generate_json(sys, user)
-        if not result or not isinstance(result, dict):
-            print(f"Warning: LLM returned invalid result: {result}")
+        from .design import DesignAdvisorService
+        
+        # Create design advisor service
+        design_advisor = DesignAdvisorService()
+        
+        # Convert brand dict to BrandIdentity object if needed
+        if isinstance(brand, dict):
+            from .brand import BrandIdentity
+            brand_obj = BrandIdentity(**brand)
+        else:
+            brand_obj = brand
+        
+        # Generate enhanced content outline using brand insights
+        outline = design_advisor.generate_content_outline(template, x, y, z, w, cta, brand_obj)
+        
+        if outline and isinstance(outline, dict):
+            return outline
+        else:
+            print(f"Warning: Enhanced content generation returned invalid result: {outline}")
             return _get_fallback_outline(template, x, y, z, cta)
-        return result
+            
     except Exception as e:
-        print(f"Warning: LLM call failed: {e}")
+        print(f"Warning: Enhanced content generation failed: {e}")
         return _get_fallback_outline(template, x, y, z, cta)
 
 def _get_fallback_outline(template: str, x: str, y: str, z: str, cta: str) -> Dict:
@@ -112,7 +105,22 @@ def render_html(template_key: str, brand: Dict, tokens: Dict, outline: Dict, her
         # Fallback to old system if new renderer fails
         print(f"⚠️  New renderer failed, falling back to old system: {e}")
         env = get_env()
-        tpl = env.get_template(f"{template_key}.html.j2")
+        
+        # Handle new channel structure
+        template_path = template_key
+        if template_key == 'story':
+            template_path = 'story/story-highlights.html.j2'
+        elif template_key == 'linkedin':
+            template_path = 'linkedin/li-product-announcement.html.j2'
+        else:
+            template_path = f"{template_key}.html.j2"
+        
+        try:
+            tpl = env.get_template(template_path)
+        except Exception as template_error:
+            print(f"⚠️  Template not found: {template_path}, trying fallback...")
+            # Try the base template as last resort
+            tpl = env.get_template("onepager.html.j2")
         
         # Ensure outline has minimum content
         if not outline.get("headline"):

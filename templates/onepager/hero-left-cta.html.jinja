@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ headline or "AI-Powered Personalization" }}</title>
+    
+    <!-- Dynamic Font Loading -->
+    {% if brand.fonts_detected %}
+        {% for font in brand.fonts_detected[:3] %}
+            <link href="https://fonts.googleapis.com/css2?family={{ font|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        {% endfor %}
+    {% else %}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% endif %}
+    
+    <style>
+        :root {
+            /* Dynamic Color Variables from Theme */
+            --bg: {{ theme.tokens.bg }};
+            --surface: {{ theme.tokens.surface }};
+            --text: {{ theme.tokens.text }};
+            --text-muted: {{ theme.tokens['text-muted'] }};
+            --brand-500: {{ theme.tokens['brand-500'] }};
+            --brand-700: {{ theme.tokens['brand-700'] }};
+            --accent-500: {{ theme.tokens['accent-500'] }};
+            --accent-700: {{ theme.tokens['accent-700'] }};
+            --muted: {{ theme.tokens.muted }};
+            --cta-bg: {{ theme.pairs.cta_bg }};
+            --cta-fg: {{ theme.pairs.cta_fg }};
+            --card-bg: {{ theme.pairs.card_bg }};
+            --card-fg: {{ theme.pairs.card_fg }};
+            --border: {{ theme.pairs.border }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--bg);
+            font-size: 16px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        /* Hero Section - Left CTA Layout */
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+            min-height: 80vh;
+            padding: 80px 0;
+        }
+        
+        .hero-content {
+            order: 1;
+        }
+        
+        .hero-visual {
+            order: 2;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            color: var(--brand-500);
+        }
+        
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            max-width: 500px;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background-color: var(--cta-bg);
+            color: var(--cta-fg);
+            padding: 16px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.125rem;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .cta-button:hover {
+            background-color: var(--brand-700);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .hero-visual {
+            background: linear-gradient(135deg, var(--surface), var(--muted));
+            border-radius: 24px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-visual::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, var(--brand-500), var(--accent-500));
+            opacity: 0.1;
+        }
+        
+        .hero-visual-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            color: var(--brand-700);
+        }
+        
+        .hero-visual-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+            background-color: var(--surface);
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-top: 48px;
+        }
+        
+        .feature-card {
+            background-color: var(--card-bg);
+            padding: 32px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .feature-card h3 {
+            color: var(--brand-700);
+            margin-bottom: 16px;
+            font-size: 1.25rem;
+        }
+        
+        .feature-card p {
+            color: var(--card-fg);
+            line-height: 1.6;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 32px;
+                text-align: center;
+            }
+            
+            .hero-content {
+                order: 2;
+            }
+            
+            .hero-visual {
+                order: 1;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1>{{ headline or "AI-Powered Personalization" }}</h1>
+                <p>{{ subhead or "Transform your customer experience with intelligent, data-driven personalization that adapts to every user." }}</p>
+                <a href="#" class="cta-button">{{ cta or "Get Started Today" }}</a>
+            </div>
+            
+            <div class="hero-visual">
+                <div class="hero-visual-content">
+                    <h3>{{ brand.name or "Brand" }}</h3>
+                    <p>AI-Powered Platform</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Features Section -->
+        <section class="features">
+            <div class="container">
+                <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 16px; color: var(--brand-700);">
+                    Why Choose {{ brand.name or "Our Platform" }}?
+                </h2>
+                <p style="text-align: center; font-size: 1.125rem; color: var(--text-muted); margin-bottom: 48px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    {{ brand.tagline or "Discover the power of intelligent personalization" }}
+                </p>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>AI-Powered Insights</h3>
+                        <p>Leverage machine learning to understand your customers and deliver personalized experiences that convert.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>Real-time Adaptation</h3>
+                        <p>Content and recommendations that adapt instantly based on user behavior and preferences.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>Seamless Integration</h3>
+                        <p>Easy-to-implement solutions that work with your existing tech stack and workflows.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

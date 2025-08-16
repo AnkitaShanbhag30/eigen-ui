@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title or "AI-Powered Platform" }}</title>
+    
+    <!-- Dynamic Font Loading -->
+    {% if brand.fonts_detected %}
+        {% for font in brand.fonts_detected[:3] %}
+            <link href="https://fonts.googleapis.com/css2?family={{ font|replace(' ', '+') }}:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        {% endfor %}
+    {% else %}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% endif %}
+    
+    <style>
+        :root {
+            --bg: {{ tokens.colors.bg or '#ffffff' }};
+            --surface: {{ tokens.colors.surface or '#f8f9fa' }};
+            --text: {{ tokens.colors.text or '#0B0B0B' }};
+            --text-muted: {{ tokens.colors.text_muted or '#6c757d' }};
+            --brand-500: {{ tokens.colors.primary }};
+            --brand-700: {{ tokens.colors.primary_dark or tokens.colors.primary }};
+            --accent-500: {{ tokens.colors.secondary }};
+            --accent-700: {{ tokens.colors.secondary_dark or tokens.colors.secondary }};
+            --muted: {{ tokens.colors.muted or '#e9ecef' }};
+            --cta-bg: {{ tokens.colors.primary }};
+            --cta-fg: #ffffff;
+            --card-bg: {{ tokens.colors.surface or '#ffffff' }};
+            --card-fg: {{ tokens.colors.text or '#0B0B0B' }};
+            --border: {{ tokens.colors.border or '#dee2e6' }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--bg);
+            font-size: 16px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        /* Hero Section - Right CTA Layout */
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+            min-height: 80vh;
+            padding: 80px 0;
+        }
+        
+        .hero-content {
+            order: 2;
+        }
+        
+        .hero-visual {
+            order: 1;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            color: var(--brand-500);
+        }
+        
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            max-width: 500px;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background-color: var(--cta-bg);
+            color: var(--cta-fg);
+            padding: 16px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.125rem;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .cta-button:hover {
+            background-color: var(--brand-700);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .hero-visual {
+            background: linear-gradient(135deg, var(--surface), var(--muted));
+            border-radius: 24px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-visual::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, var(--brand-500), var(--accent-500));
+            opacity: 0.1;
+        }
+        
+        .hero-visual-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            color: var(--brand-700);
+        }
+        
+        .hero-visual-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+        }
+        
+        /* Feature Rail Section */
+        .feature-rail {
+            padding: 80px 0;
+            background-color: var(--surface);
+        }
+        
+        .feature-rail h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            color: var(--brand-700);
+        }
+        
+        .feature-rail p {
+            text-align: center;
+            font-size: 1.125rem;
+            color: var(--text-muted);
+            margin-bottom: 48px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        .feature-item {
+            background-color: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--brand-500), var(--accent-500));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        .feature-content h3 {
+            color: var(--brand-700);
+            margin-bottom: 8px;
+            font-size: 1.125rem;
+        }
+        
+        .feature-content p {
+            color: var(--card-fg);
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 32px;
+                text-align: center;
+            }
+            
+            .hero-content {
+                order: 1;
+            }
+            
+            .hero-visual {
+                order: 2;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .feature-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-visual">
+                <div class="hero-visual-content">
+                    <h3>{{ brand.name or "Brand" }}</h3>
+                    <p>AI-Powered Platform</p>
+                </div>
+            </div>
+            
+            <div class="hero-content">
+                <h1>{{ outline.headline or "AI-Powered Platform" }}</h1>
+                <p>{{ outline.subhead or "Transform your business with intelligent automation and data-driven insights." }}</p>
+                <a href="#" class="cta-button">{{ outline.cta or "Get Started Today" }}</a>
+            </div>
+        </section>
+        
+        <!-- Feature Rail Section -->
+        <section class="feature-rail">
+            <h2>Why Choose {{ brand.name or "Our Platform" }}?</h2>
+            <p>{{ brand.tagline or "Discover the key benefits that set us apart" }}</p>
+            
+            <div class="feature-list">
+                {% for section in outline.sections[:4] %}
+                <div class="feature-item">
+                    <div class="feature-icon">{{ loop.index }}</div>
+                    <div class="feature-content">
+                        <h3>{{ section.title or "Feature" }}</h3>
+                        <p>
+                            {% if section.bullets %}
+                                {% for bullet in section.bullets[:2] %}
+                                    {{ bullet }}{% if not loop.last %}. {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                {{ section.description or "Discover how this feature can transform your business." }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</body>
+</html>

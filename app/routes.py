@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 from .brand import BrandIdentity, save_brand, load_brand, ensure_asset_dirs, get_asset_dir
 from .scrape import fetch_html, extract_meta, find_images, find_css_links, visible_text_samples, download_image
 from .palette import download_and_extract_palette, get_default_palette
-from .fonts import get_fonts_from_css_urls, get_default_fonts
+from .fonts import get_fonts_from_html_and_css, get_default_fonts
 from .llm import get_llm_provider
 from .design import DesignAdvisorService
 from .imgfm import generate_hero_image
@@ -60,8 +60,7 @@ def ingest_brand():
         # Download images and extract palette
         downloaded_images = []
         palette = []
-        primary_color = None
-        secondary_color = None
+        color_roles = {}
         logo_path = None
         
         for i, img in enumerate(images):
@@ -80,20 +79,19 @@ def ingest_brand():
                     
                     # Extract palette from logo or first image
                     if (is_logo or i == 0) and not palette:
-                        img_palette, img_primary, img_secondary = download_and_extract_palette(img['src'], save_path)
+                        img_palette, img_color_roles = download_and_extract_palette(img['src'], save_path)
                         if img_palette:
                             palette = img_palette
-                            primary_color = img_primary
-                            secondary_color = img_secondary
+                            color_roles = img_color_roles
                             if is_logo:
                                 logo_path = save_path
         
         # Use default palette if extraction failed
         if not palette:
-            palette, primary_color, secondary_color = get_default_palette()
+            palette, color_roles = get_default_palette()
         
-        # Extract fonts
-        fonts_detected = get_fonts_from_css_urls(css_links)
+        # Extract fonts from both HTML and CSS
+        fonts_detected = get_fonts_from_html_and_css(html, css_links)
         if not fonts_detected:
             fonts_detected = get_default_fonts()
         
@@ -103,7 +101,7 @@ def ingest_brand():
         tone = voice_result.get('tone', '')
         keywords = voice_result.get('keywords', [])
         
-        # Create initial BrandIdentity
+        # Create initial BrandIdentity with proper color assignment
         brand = BrandIdentity(
             slug=slug,
             name=meta.get('title', urlparse(url).netloc),
@@ -111,8 +109,10 @@ def ingest_brand():
             tagline=meta.get('description', ''),
             description=meta.get('og_description', meta.get('description', '')),
             colors={
-                "primary": primary_color,
-                "secondary": secondary_color,
+                "primary": color_roles.get('primary'),
+                "secondary": color_roles.get('secondary'),
+                "accent": color_roles.get('accent'),
+                "muted": color_roles.get('muted'),
                 "palette": palette
             },
             fonts_detected=fonts_detected,

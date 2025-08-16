@@ -308,8 +308,8 @@ def extract_business_info(html: str, base_url: str) -> Dict[str, str]:
     
     return business_info
 
-def analyze_color_scheme(html: str, base_url: str) -> Dict[str, any]:
-    """Analyze the color scheme from CSS and inline styles"""
+def analyze_color_scheme(html: str, base_url: str) -> Dict[str, Any]:
+    """Analyze the color scheme from CSS, inline styles, and CSS variables"""
     soup = BeautifulSoup(html, 'html.parser')
     color_scheme = {
         'primary': None,
@@ -319,36 +319,136 @@ def analyze_color_scheme(html: str, base_url: str) -> Dict[str, any]:
         'text_colors': []
     }
     
-    # Extract colors from inline styles
-    color_pattern = r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})|rgb\([^)]+\)|rgba\([^)]+\)'
+    # Enhanced color patterns to catch more color formats
+    color_patterns = [
+        r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})',  # Hex colors
+        r'rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)',  # RGB
+        r'rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[\d.]+\s*\)',  # RGBA
+        r'hsla?\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%',  # HSL/HSLA
+        r'var\(--([^)]+)\)',  # CSS variables
+    ]
     
-    # Look for colors in style attributes
+    all_colors = []
+    
+    # 1. Extract colors from inline styles
     for element in soup.find_all(attrs={'style': True}):
         style = element.get('style', '')
-        colors = re.findall(color_pattern, style)
-        for color in colors:
-            if color.startswith('#'):
-                color_scheme['accents'].append(color)
+        for pattern in color_patterns:
+            matches = re.findall(pattern, style)
+            for match in matches:
+                if isinstance(match, tuple):
+                    # RGB/HSL format
+                    if len(match) >= 3:
+                        r, g, b = int(match[0]), int(match[1]), int(match[2])
+                        hex_color = f"#{r:02x}{g:02x}{b:02x}"
+                        all_colors.append(hex_color)
+                elif match.startswith('#'):
+                    all_colors.append(match)
+                elif match.startswith('var'):
+                    # Handle CSS variables
+                    var_name = match.strip('var(--)')
+                    all_colors.append(f"var-{var_name}")
     
-    # Look for colors in CSS classes (basic extraction)
-    css_text = soup.find_all('style')
-    for css in css_text:
-        colors = re.findall(color_pattern, css.get_text())
-        for color in colors:
-            if color.startswith('#'):
-                color_scheme['accents'].append(color)
+    # 2. Extract colors from <style> tags
+    for style_tag in soup.find_all('style'):
+        css_content = style_tag.get_text()
+        for pattern in color_patterns:
+            matches = re.findall(pattern, css_content)
+            for match in matches:
+                if isinstance(match, tuple):
+                    # RGB/HSL format
+                    if len(match) >= 3:
+                        r, g, b = int(match[0]), int(match[1]), int(match[2])
+                        hex_color = f"#{r:02x}{g:02x}{b:02x}"
+                        all_colors.append(hex_color)
+                elif match.startswith('#'):
+                    all_colors.append(match)
+                elif match.startswith('var'):
+                    var_name = match.strip('var(--)')
+                    all_colors.append(f"var-{var_name}")
     
-    # Remove duplicates and limit results
-    color_scheme['accents'] = list(dict.fromkeys(color_scheme['accents']))[:10]
+    # 3. Extract colors from CSS variables
+    css_var_pattern = r'--([^:]+):\s*([^;]+);'
+    for style_tag in soup.find_all('style'):
+        css_content = style_tag.get_text()
+        var_matches = re.findall(css_var_pattern, css_content)
+        for var_name, var_value in var_matches:
+            # Check if the variable value is a color
+            for pattern in color_patterns[:-1]:  # Exclude CSS variable pattern
+                if re.search(pattern, var_value):
+                    all_colors.append(f"var-{var_name}")
+                    break
+    
+    # 4. Look for common color keywords in class names and IDs
+    color_keywords = ['blue', 'red', 'green', 'yellow', 'purple', 'pink', 'orange', 'gray', 'black', 'white']
+    for element in soup.find_all(class_=True):
+        classes = element.get('class', [])
+        for cls in classes:
+            cls_lower = cls.lower()
+            for keyword in color_keywords:
+                if keyword in cls_lower:
+                    # Try to extract the actual color value
+                    if hasattr(element, 'style') and element.get('style'):
+                        style = element.get('style', '')
+                        for pattern in color_patterns[:-1]:
+                            matches = re.findall(pattern, style)
+                            if matches:
+                                all_colors.extend(matches)
+    
+    # 5. Look for colors in data attributes
+    for element in soup.find_all(attrs={'data-color': True}):
+        color_value = element.get('data-color')
+        if color_value and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', color_value):
+            all_colors.append(color_value)
+    
+    # 6. Look for colors in meta tags (theme-color)
+    theme_color = soup.find('meta', attrs={'name': 'theme-color'})
+    if theme_color and theme_color.get('content'):
+        content = theme_color.get('content')
+        if re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', content):
+            all_colors.append(content)
+    
+    # Clean and deduplicate colors
+    clean_colors = []
+    for color in all_colors:
+        if color.startswith('#'):
+            clean_colors.append(color)
+        elif color.startswith('var-'):
+            clean_colors.append(color)
+    
+    # Remove duplicates while preserving order
+    unique_colors = list(dict.fromkeys(clean_colors))
+    
+    # Filter out very light/white colors and very dark/black colors
+    filtered_colors = []
+    for color in unique_colors:
+        if color.startswith('#'):
+            # Convert hex to RGB for brightness check
+            try:
+                r = int(color[1:3], 16)
+                g = int(color[3:5], 16)
+                b = int(color[5:7], 16)
+                brightness = (r * 299 + g * 587 + b * 114) / 1000
+                # Only include colors that aren't too light or too dark
+                if 30 < brightness < 225:
+                    filtered_colors.append(color)
+            except:
+                filtered_colors.append(color)
+        else:
+            filtered_colors.append(color)
+    
+    color_scheme['accents'] = filtered_colors[:15]  # Limit to 15 colors
     
     # Set primary and secondary if we have enough colors
-    if len(color_scheme['accents']) >= 2:
-        color_scheme['primary'] = color_scheme['accents'][0]
-        color_scheme['secondary'] = color_scheme['accents'][1]
+    if len(filtered_colors) >= 2:
+        color_scheme['primary'] = filtered_colors[0]
+        color_scheme['secondary'] = filtered_colors[1]
+    elif len(filtered_colors) == 1:
+        color_scheme['primary'] = filtered_colors[0]
     
     return color_scheme
 
-def detect_typography(html: str, base_url: str) -> Dict[str, any]:
+def detect_typography(html: str, base_url: str) -> Dict[str, Any]:
     """Detect typography information from the page"""
     soup = BeautifulSoup(html, 'html.parser')
     typography = {
@@ -362,6 +462,7 @@ def detect_typography(html: str, base_url: str) -> Dict[str, any]:
     weight_pattern = r'font-weight:\s*([^;]+)'
     size_pattern = r'font-size:\s*([^;]+)'
     
+    # Extract from inline styles
     for element in soup.find_all(attrs={'style': True}):
         style = element.get('style', '')
         
@@ -410,12 +511,37 @@ def detect_typography(html: str, base_url: str) -> Dict[str, any]:
             if clean_size and clean_size not in typography['sizes']:
                 typography['sizes'].append(clean_size)
     
-    # Limit results
-    typography['families'] = typography['families'][:5]
+    # Clean up font families - remove CSS artifacts and broken quotes
+    clean_families = []
+    for family in typography['families']:
+        # Remove CSS artifacts
+        if 'body{' in family or '--token' in family or 'rgb(' in family:
+            continue
+        
+        # Clean up broken quotes and commas
+        clean_family = family.replace('", "', ', ').replace('"}', '').replace('"', '').strip()
+        if clean_family and len(clean_family) > 2 and clean_family not in clean_families:
+            clean_families.append(clean_family)
+    
+    # Also look for Google Fonts links
+    for link in soup.find_all('link', attrs={'rel': 'stylesheet'}):
+        href = link.get('href', '')
+        if 'fonts.googleapis.com' in href:
+            # Extract font names from Google Fonts URL
+            font_match = re.search(r'family=([^&]+)', href)
+            if font_match:
+                font_names = font_match.group(1).split('|')
+                for font_name in font_names:
+                    clean_name = font_name.replace('+', ' ').strip()
+                    if clean_name and clean_name not in clean_families:
+                        clean_families.append(clean_name)
+    
+    # Limit results and clean up
+    typography['families'] = clean_families[:8]  # Increased limit
     typography['weights'] = typography['weights'][:5]
     typography['sizes'] = typography['sizes'][:5]
     
-    return typography 
+    return typography
 
 def extract_ui_structure(html: str, url: str) -> Dict[str, Any]:
     """Extract comprehensive UI structure and layout patterns"""
@@ -937,3 +1063,80 @@ def extract_media_queries(soup: BeautifulSoup) -> List[str]:
         breakpoints.extend(media_matches)
     
     return breakpoints 
+
+def extract_dominant_colors_from_image(image_path: str, max_colors: int = 8) -> Dict[str, Any]:
+    """Extract dominant colors from an image using PIL and clustering"""
+    try:
+        from PIL import Image
+        import numpy as np
+        from sklearn.cluster import KMeans
+        
+        # Open and resize image for faster processing
+        img = Image.open(image_path)
+        img = img.resize((150, 150))  # Resize for faster processing
+        
+        # Convert to RGB if needed
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Convert image to array of pixels
+        pixels = np.array(img).reshape(-1, 3)
+        
+        # Use K-means to find dominant colors
+        kmeans = KMeans(n_clusters=max_colors, random_state=42, n_init=10)
+        kmeans.fit(pixels)
+        
+        # Get the colors and their counts
+        colors = kmeans.cluster_centers_.astype(int)
+        labels = kmeans.labels_
+        
+        # Count occurrences of each color
+        color_counts = np.bincount(labels)
+        
+        # Sort colors by frequency (most common first)
+        sorted_indices = np.argsort(color_counts)[::-1]
+        sorted_colors = colors[sorted_indices]
+        sorted_counts = color_counts[sorted_indices]
+        
+        # Convert to hex format
+        hex_colors = []
+        for color in sorted_colors:
+            r, g, b = color
+            hex_color = f"#{r:02x}{g:02x}{b:02x}"
+            hex_colors.append(hex_color)
+        
+        # Filter out very light/white and very dark/black colors
+        filtered_colors = []
+        for i, hex_color in enumerate(hex_colors):
+            r, g, b = sorted_colors[i]
+            brightness = (r * 299 + g * 587 + b * 114) / 1000
+            # Only include colors that aren't too light or too dark
+            if 30 < brightness < 225:
+                filtered_colors.append(hex_color)
+        
+        if not filtered_colors:
+            filtered_colors = hex_colors[:3]  # Fallback to original colors
+        
+        return {
+            'primary': filtered_colors[0] if filtered_colors else None,
+            'secondary': filtered_colors[1] if len(filtered_colors) > 1 else None,
+            'palette': filtered_colors[:max_colors],
+            'counts': sorted_counts.tolist()
+        }
+        
+    except ImportError:
+        # Fallback if PIL or sklearn not available
+        return {
+            'primary': None,
+            'secondary': None,
+            'palette': [],
+            'counts': []
+        }
+    except Exception as e:
+        print(f"Error extracting colors from image: {e}")
+        return {
+            'primary': None,
+            'secondary': None,
+            'palette': [],
+            'counts': []
+        } 
