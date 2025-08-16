@@ -3,10 +3,12 @@ import json
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field, ValidationError
 from playwright.sync_api import sync_playwright
+from .templates_loader import TemplatesLoader
+from .html_tokens import generate_tokens
 
 
 class RenderPayload(BaseModel):
-    template: str = Field(..., description="Template name without .html, e.g., 'onepager'")
+    template: str = Field(..., description="Template name without .html.j2, e.g., 'onepager'")
     format: str = Field("png", description="'png' or 'pdf'")
     data: Dict[str, Any] = Field(default_factory=dict)
     width: int = 1200
@@ -98,3 +100,55 @@ def get_mimetype_and_filename(payload: RenderPayload) -> tuple[str, str]:
         return "image/png", f"{payload.template}.png"
     else:
         raise ValueError(f"Unsupported format: {fmt}")
+
+
+def render_template_with_brand(template_name: str, brand_data: Dict[str, Any], 
+                             custom_data: Dict[str, Any] = None) -> str:
+    """Render a template using the existing template system with brand data"""
+    try:
+        # Initialize template loader
+        template_loader = TemplatesLoader()
+        
+        # Check if template exists
+        if not template_loader.template_exists(template_name):
+            raise ValueError(f"Template '{template_name}' not found. Available: {template_loader.list_templates()}")
+        
+        # Prepare context data
+        context = {
+            'brand': brand_data,
+            'title': custom_data.get('title', brand_data.get('name', 'Brand Content')),
+            'font_links': custom_data.get('font_links', ''),
+            'hero_url': custom_data.get('hero_url', None)
+        }
+        
+        # If custom data includes outline, use it; otherwise create a basic one
+        if 'outline' in custom_data:
+            context['outline'] = custom_data['outline']
+        else:
+            # Create basic outline from custom data
+            context['outline'] = {
+                'headline': custom_data.get('title', brand_data.get('name', 'Brand Content')),
+                'subhead': custom_data.get('subtitle', custom_data.get('description', '')),
+                'sections': custom_data.get('sections', []),
+                'cta': custom_data.get('cta', 'Learn More')
+            }
+        
+        # Generate design tokens for styling
+        try:
+            from .brand import BrandIdentity
+            brand_obj = BrandIdentity(**brand_data)
+            tokens = generate_tokens(brand_obj)
+            context['tokens'] = tokens
+        except Exception as e:
+            # Fallback to basic tokens if generation fails
+            context['tokens'] = {
+                'colors': {'primary': '#0C69F5', 'secondary': '#6b7280'},
+                'font_heading': 'Inter',
+                'font_body': 'Inter'
+            }
+        
+        # Render the template
+        return template_loader.render_template(template_name, context)
+        
+    except Exception as e:
+        raise ValueError(f"Failed to render template '{template_name}': {str(e)}")

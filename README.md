@@ -51,6 +51,10 @@ python cli.py generate demo onepager \
   --cta "Join the beta" \
   --to-html
 
+# Render assets to PNG/PDF using Playwright
+python cli.py render demo onepager --format png --title "Q3 Results"
+python cli.py render demo onepager --format pdf --title "Q3 Results" --subtitle "Revenue Growth"
+
 # List all brands
 python cli.py list-brands
 
@@ -83,47 +87,65 @@ python -m app.main
 
 The new renderer allows you to convert HTML templates to high-quality PNG images or PDF documents using Playwright.
 
-#### Render API Usage
+#### CLI Rendering
 
 ```bash
-# Render to PNG
-curl -X POST http://127.0.0.1:5000/render \
+# Basic rendering
+python cli.py render demo onepager --format png
+
+# Custom dimensions and scale
+python cli.py render demo onepager --format png --width 2400 --height 3200 --scale 2
+
+# Custom content
+python cli.py render demo onepager --format pdf \
+  --title "Holiday Campaign" \
+  --subtitle "Q4 Revenue Push" \
+  --cta "Shop Now" \
+  --output holiday-campaign.pdf
+```
+
+#### API Rendering
+
+```bash
+# Render to PNG with brand data
+curl -X POST http://127.0.0.1:5050/render \
   -H 'Content-Type: application/json' \
   -d '{
     "template": "onepager",
     "format": "png",
     "data": {
+      "brand_slug": "demo",
       "title": "Q3 Retail",
       "subtitle": "Brand Content",
-      "tag": "Preview",
-      "kpis": [{"label":"CTR lift","value":"18%"},
-               {"label":"CPA delta","value":"-12%"},
-               {"label":"Saves","value":"+3.1k"}],
-      "bullets": ["Lift CTR by 18%", "Channels: IG, X, Email", "Hero variants: 6"],
-      "footer": "© 2025 YourCo"
+      "cta": "Learn More"
     },
     "width": 1200,
     "height": 1600,
     "scale": 2
   }' --output onepager.png
 
-# Render to PDF
-curl -X POST http://127.0.0.1:5000/render \
+# Render to PDF with custom brand data
+curl -X POST http://127.0.0.1:5050/render \
   -H 'Content-Type: application/json' \
   -d '{
     "template": "onepager",
     "format": "pdf",
-    "data": {"title":"Q3 Retail","subtitle":"Brand Content"},
+    "data": {
+      "brand_name": "Custom Brand",
+      "brand_color": "#FF6B6B",
+      "text_color": "#2C3E50",
+      "title": "Q3 Results"
+    },
     "width": 1200,
     "height": 1600
-  }' --output onepager.pdf
+  }' --output custom-brand.pdf
 ```
 
 #### Render Parameters
 
-- `template`: Template name (without .html extension)
+- `template`: Template name (`onepager`, `newsletter`, `blogpost`)
 - `format`: Output format (`png` or `pdf`)
-- `data`: Template variables for Jinja2 rendering
+- `data`: Template variables and brand information
 - `width`: Output width in pixels
 - `height`: Output height in pixels
 - `scale`: Device scale factor for PNG (1-3, default: 2 for retina)
@@ -134,7 +156,7 @@ curl -X POST http://127.0.0.1:5000/render \
 # 1. Ingest a brand
 python cli.py ingest https://acme.com acme
 
-# 2. Generate a one-pager
+# 2. Generate content
 python cli.py generate acme onepager \
   --x "revolutionary AI platform" \
   --y "transforms business operations" \
@@ -142,16 +164,8 @@ python cli.py generate acme onepager \
   --cta "Schedule a demo"
 
 # 3. Render to high-quality assets
-curl -X POST http://127.0.0.1:5000/render \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "template": "onepager",
-    "format": "png",
-    "data": {"title": "Acme AI Platform"},
-    "width": 1200,
-    "height": 1600,
-    "scale": 2
-  }' --output acme-onepager.png
+python cli.py render acme onepager --format png --title "Acme AI Platform"
+python cli.py render acme onepager --format pdf --title "Acme AI Platform"
 
 # 4. Check the output
 ls data/drafts/
@@ -172,8 +186,11 @@ cat data/drafts/acme-onepager-*.md
   # ... other modules
 
 /templates
-  onepager.html        # One-pager template
-  # ... other templates
+  onepager.html.j2     # One-pager template
+  newsletter.html.j2   # Newsletter template
+  blogpost.html.j2     # Blog post template
+  base.html.j2         # Base template
+  theme.css.j2         # Styling
 
 /static
   /fonts              # Brand fonts (add BrandSans.woff2)
@@ -197,10 +214,10 @@ pytest tests/unit/test_renderer.py -v
 
 ### Adding New Templates
 
-1. Create new `.html` file in `/templates/`
-2. Use Jinja2 syntax for dynamic content
-3. Include CSS styling for consistent branding
-4. Test with the render API
+1. Create new `.html.j2` file in `/templates/`
+2. Extend `base.html.j2` for consistent styling
+3. Add template to `TemplatesLoader.templates` in `app/templates_loader.py`
+4. Test with both CLI generation and renderer
 
 ### Adding New LLM Providers
 

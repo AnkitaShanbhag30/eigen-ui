@@ -334,6 +334,95 @@ def generate(
         raise typer.Exit(1)
 
 @app.command()
+def render(
+    slug: str = typer.Argument(..., help="Brand slug"),
+    template: str = typer.Argument(..., help="Template: onepager, newsletter, or blogpost"),
+    format: str = typer.Option("png", "--format", "-f", help="Output format: png or pdf"),
+    output: str = typer.Option("", "--output", "-o", help="Output filename (optional)"),
+    width: int = typer.Option(1200, "--width", "-w", help="Output width in pixels"),
+    height: int = typer.Option(1600, "--height", "-h", help="Output height in pixels"),
+    scale: int = typer.Option(2, "--scale", "-s", help="Device scale factor (1-3, default: 2 for retina)"),
+    title: str = typer.Option("", "--title", "-t", help="Custom title for the content"),
+    subtitle: str = typer.Option("", "--subtitle", help="Custom subtitle"),
+    cta: str = typer.Option("", "--cta", help="Custom call to action"),
+    hero: str = typer.Option("", "--hero", help="Hero image path (optional)")
+):
+    """Render brand-styled assets (PNG or PDF) from templates using Playwright"""
+    typer.echo(f"Rendering {template} template for brand {slug} to {format.upper()}...")
+    
+    try:
+        # Check if brand exists
+        brand = load_brand(slug)
+        if not brand:
+            typer.echo(f"❌ Brand {slug} not found", err=True)
+            raise typer.Exit(1)
+        
+        # Validate format
+        if format.lower() not in ['png', 'pdf']:
+            typer.echo(f"❌ Invalid format: {format}. Use 'png' or 'pdf'", err=True)
+            raise typer.Exit(1)
+        
+        # Validate scale
+        if scale < 1 or scale > 3:
+            typer.echo(f"❌ Invalid scale: {scale}. Must be between 1 and 3", err=True)
+            raise typer.Exit(1)
+        
+        # Prepare custom data
+        custom_data = {}
+        if title:
+            custom_data['title'] = title
+        if subtitle:
+            custom_data['subtitle'] = subtitle
+        if cta:
+            custom_data['cta'] = cta
+        if hero:
+            custom_data['hero_url'] = hero
+        
+        # Import renderer functions
+        from app.renderer import render_template_with_brand, render_to_bytes, get_mimetype_and_filename
+        
+        # Render template to HTML
+        typer.echo("📄 Rendering template to HTML...")
+        html = render_template_with_brand(template, brand.model_dump(), custom_data)
+        
+        if not html:
+            typer.echo("❌ Failed to render template", err=True)
+            raise typer.Exit(1)
+        
+        # Create render payload
+        from app.renderer import RenderPayload
+        payload = RenderPayload(
+            template=template,
+            format=format.lower(),
+            data=custom_data,
+            width=width,
+            height=height,
+            scale=scale
+        )
+        
+        # Render to bytes
+        typer.echo(f"🎨 Rendering to {format.upper()}...")
+        out_bytes = render_to_bytes(payload, html)
+        
+        # Generate output filename
+        if not output:
+            output = f"{slug}-{template}-{format}.{format.lower()}"
+        
+        # Save file
+        with open(output, 'wb') as f:
+            f.write(out_bytes)
+        
+        typer.echo(f"✅ Successfully rendered to {output}")
+        typer.echo(f"📏 Dimensions: {width}x{height} pixels")
+        if format.lower() == 'png':
+            typer.echo(f"🔍 Scale: {scale}x (output: {width*scale}x{height*scale})")
+        typer.echo(f"📁 File size: {len(out_bytes) / 1024:.1f} KB")
+        
+    except Exception as e:
+        typer.echo(f"❌ Error: {e}", err=True)
+        raise typer.Exit(1)
+
+@app.command()
 def list_brands():
     """List all available brands"""
     try:

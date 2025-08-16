@@ -8,7 +8,7 @@ from .fonts import get_fonts_from_css_urls, get_default_fonts
 from .llm import get_llm_provider
 from .design import DesignAdvisorService
 from .imgfm import generate_hero_image
-from .renderer import validate_render_payload, render_to_bytes, get_mimetype_and_filename
+from .renderer import validate_render_payload, render_to_bytes, get_mimetype_and_filename, render_template_with_brand
 import json
 from urllib.parse import urlparse
 import re
@@ -291,9 +291,37 @@ def render_route():
     except Exception as e:
         return jsonify({"error": "invalid_payload", "details": str(e)}), 400
 
-    template_path = f"{payload.template}.html"
     try:
-        html = render_template(template_path, **payload.data)
+        # Get brand data if slug is provided
+        brand_data = None
+        if 'brand_slug' in payload.data:
+            brand_slug = payload.data['brand_slug']
+            brand = load_brand(brand_slug)
+            if not brand:
+                return jsonify({"error": "brand_not_found", "details": f"Brand '{brand_slug}' not found"}), 404
+            brand_data = brand.dict()
+        else:
+            # Use default brand data if no slug provided
+            brand_data = {
+                'name': payload.data.get('brand_name', 'Brand'),
+                'website': payload.data.get('website', 'https://example.com'),
+                'tagline': payload.data.get('tagline', ''),
+                'colors': {
+                    'primary': payload.data.get('brand_color', '#0C69F5'),
+                    'secondary': payload.data.get('text_color', '#111111'),
+                    'palette': []
+                },
+                'fonts_detected': ['Inter'],
+                'tone': 'professional',
+                'keywords': []
+            }
+
+        # Render the template using the existing system
+        html = render_template_with_brand(payload.template, brand_data, payload.data)
+        
+        if not html:
+            return jsonify({"error": "template_error", "details": "Failed to render template"}), 400
+
     except Exception as e:
         return jsonify({"error": "template_error", "details": str(e)}), 400
 
@@ -318,16 +346,9 @@ def healthz():
 def list_templates():
     """List available templates for rendering"""
     try:
-        templates_dir = "templates"
-        if not os.path.exists(templates_dir):
-            return jsonify({"templates": []})
-        
-        templates = []
-        for filename in os.listdir(templates_dir):
-            if filename.endswith('.html'):
-                template_name = filename[:-5]  # Remove .html extension
-                templates.append(template_name)
-        
+        from .templates_loader import TemplatesLoader
+        template_loader = TemplatesLoader()
+        templates = template_loader.list_templates()
         return jsonify({"templates": templates})
         
     except Exception as e:

@@ -17,20 +17,10 @@ def test_renderer():
         "template": "onepager",
         "format": "png",
         "data": {
+            "brand_slug": "demo",  # Use existing brand if available
             "title": "Test Renderer",
             "subtitle": "Verification Test",
-            "tag": "Test",
-            "kpis": [
-                {"label": "Success", "value": "100%"},
-                {"label": "Speed", "value": "Fast"},
-                {"label": "Quality", "value": "High"}
-            ],
-            "bullets": [
-                "Renderer is working",
-                "PNG generation successful",
-                "Template rendering works"
-            ],
-            "footer": "© 2025 Test Co"
+            "cta": "Get Started"
         },
         "width": 1200,
         "height": 1600,
@@ -118,6 +108,9 @@ if __name__ == "__main__":
     if success:
         print("\n✅ Renderer test completed successfully!")
         print("You can now use the renderer API to generate PNG and PDF assets.")
+        print("\n💡 Try the new CLI command:")
+        print("   python cli.py render <brand-slug> <template> --format png")
+        print("   python cli.py render <brand-slug> <template> --format pdf")
     else:
         print("\n❌ Renderer test failed!")
         print("Check the error messages above and ensure all dependencies are installed.")
