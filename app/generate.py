@@ -40,10 +40,35 @@ def outline_for(template: str, brand: Dict, x: str, y: str, z: str, w: str, cta:
             return outline
         else:
             print(f"Warning: Enhanced content generation returned invalid result: {outline}")
+            # Try legacy LLM path
+            legacy = generate_json(
+                system="You are a content planner that returns JSON only.",
+                user=json.dumps({
+                    "template": template,
+                    "x": x, "y": y, "z": z, "w": w, "cta": cta,
+                    "brand": brand_obj.model_dump() if hasattr(brand_obj, 'model_dump') else brand
+                })
+            )
+            if isinstance(legacy, dict) and legacy.get("headline"):
+                return legacy
             return _get_fallback_outline(template, x, y, z, cta)
             
     except Exception as e:
         print(f"Warning: Enhanced content generation failed: {e}")
+        # Try legacy LLM path
+        try:
+            legacy = generate_json(
+                system="You are a content planner that returns JSON only.",
+                user=json.dumps({
+                    "template": template,
+                    "x": x, "y": y, "z": z, "w": w, "cta": cta,
+                    "brand": brand
+                })
+            )
+            if isinstance(legacy, dict) and legacy.get("headline"):
+                return legacy
+        except Exception as _:
+            pass
         return _get_fallback_outline(template, x, y, z, cta)
 
 def _get_fallback_outline(template: str, x: str, y: str, z: str, cta: str) -> Dict:
@@ -97,7 +122,19 @@ def render_html(template_key: str, brand: Dict, tokens: Dict, outline: Dict, her
             'font_links': _font_links(brand["typography"]["heading"], brand["typography"]["body"])
         }
         
-        # Use the new renderer system
+        # Use the new renderer system; ensure brand has minimal color structure for templates
+        if 'colors' not in brand or not isinstance(brand.get('colors'), dict):
+            brand = {
+                **brand,
+                'colors': {
+                    'primary': tokens.get('colors', {}).get('primary', '#0C69F5'),
+                    'secondary': tokens.get('colors', {}).get('secondary', '#6b7280'),
+                    'accent': tokens.get('colors', {}).get('accent', '#f59e0b'),
+                    'muted': tokens.get('colors', {}).get('muted', '#9ca3af'),
+                    'bg': tokens.get('colors', {}).get('bg', '#ffffff'),
+                    'text': tokens.get('colors', {}).get('text', '#111827'),
+                }
+            }
         html = render_template_with_brand(template_key, brand, custom_data)
         return html
         
@@ -219,54 +256,40 @@ def generate_assets(slug: str, brand: Dict, template: str, x:str,y:str,z:str,w:s
     html = render_html(template, brand, tokens, outline, hero_url)
     html_path = os.path.join(drafts_dir, f"{slug}-{template}-{ts}.html")
     
-    # Check if Dyad templates are available and use SSR renderer
+    # Use V0 engine wrapper by default (unless force_html), then fallback to local HTML
     html_for_pdf = html  # Default to original HTML
     try:
-        import sys
-        from pathlib import Path
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        from renderer.resolve_templates import resolve_templates
         import subprocess
         
-        sel = resolve_templates()
-        
-        if sel["engine"] == "react" and not force_html:
-            print("🎨 Using Dyad React SSR renderer...")
-            entry = sel["entry"]
+        if not force_html:
+            print("⚡ Using Vercel V0 engine...")
             # Ensure brand json exists at data/brands/{slug}.json
             brand_json_path = f"data/brands/{slug}.json"
             if not os.path.exists(brand_json_path):
-                # Create brand json if it doesn't exist
                 with open(brand_json_path, 'w') as f:
                     json.dump(brand, f, indent=2, default=str)
                 print(f"💾 Created brand config: {brand_json_path}")
             
             try:
-                # Pass user requirements to SSR renderer
+                node_script = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts', 'v0-generate.mjs'))
                 cmd = [
-                    "pnpm", "ssr",
-                    "--brand", slug,
-                    "--entry", entry,
-                    "--out", html_path,
-                    "--props", brand_json_path
+                    "node", node_script,
+                    slug, template, brand_json_path, x or "", y or "", z or "", cta or ""
                 ]
-                
-                # Add user requirements if available
-                if x: cmd.extend(["--x", x])
-                if y: cmd.extend(["--y", y])
-                if z: cmd.extend(["--z", z])
-                if w: cmd.extend(["--w", w])
-                if cta: cmd.extend(["--cta", cta])
-                
-                subprocess.run(cmd, check=True)
-                print(f"✅ SSR rendered to: {html_path}")
-                
-                # Read the generated HTML for PDF conversion
-                with open(html_path, "r", encoding="utf-8") as f:
-                    html_for_pdf = f.read()
+                res = subprocess.run(cmd, check=True, capture_output=True, text=True)
+                v0_out = json.loads(res.stdout.strip())
+                # Use the wrapper HTML for the on-disk HTML artifact,
+                # but keep html_for_pdf as the original HTML for PDF rendering
+                html_path = v0_out.get("html", html_path)
+                print(f"✅ V0 generated: {html_path}")
             except subprocess.CalledProcessError as e:
-                print(f"⚠️ SSR renderer failed, falling back to HTML: {e}")
-                with open(html_path, "w", encoding="utf-8") as f: 
+                print(f"⚠️ V0 engine failed, falling back to HTML: {e}")
+                with open(html_path, "w", encoding="utf-8") as f:
+                    f.write(html)
+                html_for_pdf = html
+            except Exception as e:
+                print(f"⚠️ V0 integration error: {e}")
+                with open(html_path, "w", encoding="utf-8") as f:
                     f.write(html)
                 html_for_pdf = html
         else:
@@ -274,7 +297,7 @@ def generate_assets(slug: str, brand: Dict, template: str, x:str,y:str,z:str,w:s
             with open(html_path, "w", encoding="utf-8") as f: 
                 f.write(html)
     except Exception as e:
-        print(f"⚠️ SSR integration failed, falling back to HTML: {e}")
+        print(f"⚠️ V0 integration outer error, falling back to HTML: {e}")
         with open(html_path, "w", encoding="utf-8") as f: 
             f.write(html)
 

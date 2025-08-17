@@ -2,6 +2,8 @@
   "name": "eigen-ui",
   "private": true,
   "packageManager": "pnpm@8.15.0",
+  "type": "module",
+  "engines": { "node": ">=18.17" },
   "scripts": {
     "dyad:dev": "cd tools/dyad && pnpm dev",
     "dyad:sync": "node scripts/dyad-sync.mjs",
@@ -12,7 +14,8 @@
     "test:report": "node scripts/run-tests.mjs --report-only",
     "evaluate:single": "node scripts/gpt-asset-evaluator.mjs evaluate",
     "evaluate:batch": "node scripts/gpt-asset-evaluator.mjs batch",
-    "evaluate:report": "node scripts/gpt-asset-evaluator.mjs report"
+    "evaluate:report": "node scripts/gpt-asset-evaluator.mjs report",
+    "v0:gen": "node scripts/v0-generate.mjs"
   },
   "devDependencies": {
     "chokidar": "^3.5.3",
@@ -23,6 +26,8 @@
   },
   "dependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "v0-sdk": "^0.7.1",
+    "dotenv": "^16.4.5"
   }
 }

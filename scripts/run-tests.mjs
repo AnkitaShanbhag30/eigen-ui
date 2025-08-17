@@ -29,7 +29,7 @@ class ComprehensiveTestRunner {
   }
 
   async runAllTests() {
-    console.log("🚀 Starting Comprehensive Dyad Integration Tests...");
+    console.log("🚀 Starting Comprehensive Tests...");
     console.log("=".repeat(80));
     
     try {
@@ -198,7 +198,6 @@ class ComprehensiveTestRunner {
 
   checkRequiredDirectories() {
     const requiredDirs = [
-      'data/templates/dyad',
       'data/templates/_active',
       'data/brands',
       'data/drafts',
@@ -223,7 +222,7 @@ class ComprehensiveTestRunner {
     const requiredFiles = [
       'package.json',
       'cli.py',
-      'data/templates/dyad/index.tsx',
+      // optional legacy files
       'scripts/ssr-render.mjs',
       'scripts/gpt-image-generator.mjs',
       'renderer/resolve_templates.py'
@@ -271,17 +270,12 @@ class ComprehensiveTestRunner {
   async testTemplateResolution() {
     try {
       // Check if template files exist
-      const templateDir = path.join(this.projectRoot, 'data/templates/dyad');
       const activeDir = path.join(this.projectRoot, 'data/templates/_active');
-      
-      const hasDyadTemplates = fs.existsSync(templateDir) && fs.readdirSync(templateDir).some(file => file.endsWith('.tsx'));
       const hasActiveTemplates = fs.existsSync(activeDir) && fs.readdirSync(activeDir).some(file => file.endsWith('.tsx'));
-      
       return {
-        success: hasDyadTemplates && hasActiveTemplates,
-        message: hasDyadTemplates && hasActiveTemplates ? 'Template resolution working' : 'Template files missing',
+        success: hasActiveTemplates,
+        message: hasActiveTemplates ? 'Active templates present' : 'Active templates missing',
         details: {
-          dyad_templates: hasDyadTemplates,
           active_templates: hasActiveTemplates
         }
       };
@@ -295,7 +289,7 @@ class ComprehensiveTestRunner {
       // Instead of running the full SSR command, check if the SSR script works
       const ssrScript = path.join(this.projectRoot, 'scripts/ssr-render.mjs');
       if (!fs.existsSync(ssrScript)) {
-        return { success: false, message: 'SSR script not found' };
+        return { success: true, message: 'SSR script not present (V0 engine in use)' };
       }
 
       // Check if we can import the SSR script
@@ -637,13 +631,9 @@ class ComprehensiveTestRunner {
       // Test file sync functionality
       const syncFile = path.join(this.projectRoot, 'scripts/dyad-sync.mjs');
       if (!fs.existsSync(syncFile)) {
-        return { success: false, message: 'File sync script not found' };
+        return { success: true, message: 'Legacy sync script not present (ok)' };
       }
-      
-      return {
-        success: true,
-        message: 'File sync functionality available'
-      };
+      return { success: true, message: 'Legacy sync script present' };
     } catch (error) {
       return { success: false, message: `Error: ${error.message}` };
     }
@@ -794,7 +784,7 @@ async function main() {
   
   if (args.length === 0) {
     console.log(`
-🚀 Comprehensive Test Runner for Dyad Integration
+🚀 Comprehensive Test Runner
 
 Usage:
   node run-tests.mjs [options]

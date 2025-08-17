@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -31,14 +31,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
+        {# Token-driven theme CSS (ensures var(--color-*) is present for tests) #}
+        {% include "theme.css.j2" %}
+
         :root {
             /* Dynamic Color Variables from Ingested Brand Data */
-            --brand-primary: {{ brand.colors.primary or '#0C69F5' }};
-            --brand-secondary: {{ brand.colors.secondary or '#6b7280' }};
-            --brand-accent: {{ brand.colors.accent or '#f59e0b' }};
-            --brand-muted: {{ brand.colors.muted or '#9ca3af' }};
-            --brand-bg: {{ brand.colors.bg or '#ffffff' }};
-            --brand-text: {{ brand.colors.text or '#111827' }};
+            {% set _brand_colors = brand.get('colors', {}) if brand is mapping else {} %}
+            --brand-primary: {{ _brand_colors.get('primary', tokens.colors.primary or '#0C69F5') }};
+            --brand-secondary: {{ _brand_colors.get('secondary', tokens.colors.secondary or '#6b7280') }};
+            --brand-accent: {{ _brand_colors.get('accent', tokens.colors.accent or '#f59e0b') }};
+            --brand-muted: {{ _brand_colors.get('muted', tokens.colors.muted or '#9ca3af') }};
+            --brand-bg: {{ _brand_colors.get('bg', tokens.colors.bg or '#ffffff') }};
+            --brand-text: {{ _brand_colors.get('text', tokens.colors.text or '#111827') }};
             
             /* Dynamic Typography from Ingested Data */
             --font-heading: {{ brand.fonts_detected[0] if brand.fonts_detected else (brand.typography.heading or 'Inter') }}, {{ brand.typography.fallbacks[0] if brand.typography.fallbacks else 'Inter' }}, system-ui, sans-serif;

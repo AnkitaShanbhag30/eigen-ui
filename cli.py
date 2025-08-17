@@ -8,6 +8,7 @@ import os
 import sys
 from pathlib import Path
 import json
+import subprocess
 
 # Load environment variables FIRST, before any other imports
 from dotenv import load_dotenv
@@ -27,6 +28,17 @@ from app.html_tokens import generate_tokens, get_google_fonts_links
 from urllib.parse import urlparse
 
 app = typer.Typer(help="Brand Content Generator CLI")
+
+def _v0_generate(slug: str, intent: str, brand_json_path: str, x: str, y: str, z: str, cta: str):
+    """Bridge to Vercel V0 engine wrapper script."""
+    cmd = [
+        "node", "scripts/v0-generate.mjs",
+        slug, intent, brand_json_path, x or "", y or "", z or "", cta or ""
+    ]
+    env = os.environ.copy()
+    # If using a .env file, the Node script loads it via dotenv/config
+    res = subprocess.run(cmd, check=True, capture_output=True, text=True, env=env)
+    return json.loads(res.stdout.strip())
 
 @app.command()
 def ingest(url: str, slug: str):
