@@ -62,21 +62,37 @@ class FontReplacer {
   replaceFonts(htmlContent) {
     let updatedHtml = htmlContent;
     
+    // First, replace CSS variables with actual font values
+    updatedHtml = updatedHtml.replace(
+      /var\(--heading-font\)/g,
+      `'${this.fontMappings.heading.to}'`
+    );
+    
+    updatedHtml = updatedHtml.replace(
+      /var\(--body-font\)/g,
+      `'${this.fontMappings.body.to}'`
+    );
+    
     // Replace specific font family strings with cleaner versions
     const fontReplacements = {
-      'Plus Jakarta Sans, Plus Jakarta Sans Placeholder, sans-serif, sans-serif': 'Plus Jakarta Sans, sans-serif',
-      'Inter-Medium, Inter, sans-serif, sans-serif': 'Inter, sans-serif',
-      'Inter, Inter Placeholder, sans-serif': 'Inter, sans-serif',
-      'Plus Jakarta Sans, Plus Jakarta Sans Placeholder, sans-serif': 'Plus Jakarta Sans, sans-serif',
-      'Inter-Medium, Inter, sans-serif': 'Inter, sans-serif',
-      'Plus Jakarta Sans, Plus Jakarta Sans Placeholder, sans-serif': 'Plus Jakarta Sans, sans-serif'
+      'Plus Jakarta Sans, Plus Jakarta Sans Placeholder, sans-serif, sans-serif': 'Plus Jakarta Sans',
+      'Inter-Medium, Inter, sans-serif, sans-serif': 'Inter',
+      'Inter, Inter Placeholder, sans-serif': 'Inter',
+      'Plus Jakarta Sans, Plus Jakarta Sans Placeholder, sans-serif': 'Plus Jakarta Sans',
+      'Inter-Medium, Inter, sans-serif': 'Inter',
+      'Plus Jakarta Sans, Plus Jakarta Sans Placeholder, sans-serif': 'Plus Jakarta Sans',
+      // Remove all fallback fonts
+      ', Inter, system-ui, Segoe UI, Roboto, Helvetica, Arial': '',
+      ', system-ui, Segoe UI, Roboto, Helvetica, Arial': '',
+      ', sans-serif': '',
+      'sans-serif': ''
     };
     
     for (const [from, to] of Object.entries(fontReplacements)) {
       updatedHtml = updatedHtml.replace(new RegExp(this.escapeRegExp(from), 'g'), to);
     }
     
-    // Replace generic font references in CSS
+    // Replace generic font references in CSS with only brand fonts
     updatedHtml = updatedHtml.replace(
       /font-family:\s*['"]([^'"]+)['"]/g,
       (match, fontFamily) => {
@@ -88,8 +104,15 @@ class FontReplacer {
           if (this.fontMappings.body.from.includes(font)) {
             return this.fontMappings.body.to;
           }
-          return font;
-        });
+          // Remove any font that's not a brand font
+          return '';
+        }).filter(font => font !== ''); // Remove empty entries
+        
+        if (updatedFonts.length === 0) {
+          // If no brand fonts found, use the primary brand font
+          return `font-family: '${this.fontMappings.heading.to}'`;
+        }
+        
         return `font-family: '${updatedFonts.join("', '")}'`;
       }
     );
@@ -106,8 +129,15 @@ class FontReplacer {
           if (this.fontMappings.body.from.includes(font)) {
             return this.fontMappings.body.to;
           }
-          return font;
-        });
+          // Remove any font that's not a brand font
+          return '';
+        }).filter(font => font !== ''); // Remove empty entries
+        
+        if (updatedFonts.length === 0) {
+          // If no brand fonts found, use the primary brand font
+          return `font-family: ${this.fontMappings.heading.to};`;
+        }
+        
         return `font-family: ${updatedFonts.join(', ')};`;
       }
     );
@@ -124,8 +154,15 @@ class FontReplacer {
           if (this.fontMappings.body.from.includes(font)) {
             return this.fontMappings.body.to;
           }
-          return font;
-        });
+          // Remove any font that's not a brand font
+          return '';
+        }).filter(font => font !== ''); // Remove empty entries
+        
+        if (updatedFonts.length === 0) {
+          // If no brand fonts found, use the primary brand font
+          return match.replace(fontFamily, this.fontMappings.heading.to);
+        }
+        
         return match.replace(fontFamily, updatedFonts.join(', '));
       }
     );
@@ -142,8 +179,15 @@ class FontReplacer {
           if (this.fontMappings.body.from.includes(font)) {
             return this.fontMappings.body.to;
           }
-          return font;
-        });
+          // Remove any font that's not a brand font
+          return '';
+        }).filter(font => font !== ''); // Remove empty entries
+        
+        if (updatedFonts.length === 0) {
+          // If no brand fonts found, use the primary brand font
+          return `font-family: ${this.fontMappings.heading.to}`;
+        }
+        
         return `font-family: ${updatedFonts.join(', ')}`;
       }
     );

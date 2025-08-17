@@ -1,183 +1,284 @@
-# Test Structure for eigen-ui
+# 🧪 Dyad Integration Testing Framework
 
-This directory contains organized tests for the eigen-ui project, categorized by scope and complexity.
+Comprehensive testing suite for the Dyad integration, covering asset generation quality, correctness, and performance using GPT as an auto-rater.
 
-## Test Categories
+## 🎯 Testing Objectives
 
-### 🧪 Unit Tests (`tests/unit/`)
-- **Purpose**: Test individual functions and classes in isolation
-- **Speed**: Fast (seconds)
-- **Scope**: Single module/function
-- **When to run**: During development, before commits, CI/CD
+### 1. Asset Generation Correctness
+- **Text Content**: Verify brand data is correctly extracted and applied
+- **Fonts**: Ensure proper font application throughout the document
+- **Images**: Validate image generation and integration
+- **Colors**: Check brand color consistency
+- **Layout**: Verify proper HTML structure and CSS
 
-**Files:**
-- `test_brand.py` - BrandIdentity model tests
-- `test_html_tokens.py` - Design token generation tests
-- `test_util.py` - Utility function tests
+### 2. Asset Quality Assessment
+- **HTML Quality**: Code structure, semantic markup, best practices
+- **Content Relevance**: Brand alignment, message consistency
+- **Visual Appeal**: Design quality, user experience
+- **Accessibility**: Alt text, semantic tags, responsive design
+- **Professional Standards**: Industry best practices compliance
 
-### 🔗 Integration Tests (`tests/integration/`)
-- **Purpose**: Test module interactions and data flow
-- **Speed**: Medium (seconds to minutes)
-- **Scope**: Multiple modules working together
-- **When to run**: Before major changes, integration testing
+## 🚀 Quick Start
 
-**Files:**
-- `test_templates.py` - Template rendering and design token integration
-
-### 🚀 Comprehensive Tests (`tests/comprehensive/`)
-- **Purpose**: Test complete workflows end-to-end
-- **Speed**: Slow (minutes)
-- **Scope**: Full application workflows
-- **When to run**: Before releases, major refactoring, deployment
-
-**Files:**
-- `test_end_to_end.py` - Complete content generation to export workflows
-
-## Running Tests
-
-### Quick Test Runner
+### Run All Tests
 ```bash
-# Run unit tests (fastest)
-python run_tests.py unit
-
-# Run integration tests (medium)
-python run_tests.py integration
-
-# Run comprehensive tests (slowest)
-python run_tests.py comprehensive
-
-# Run all tests
-python run_tests.py all
-
-# Run with verbose output
-python run_tests.py unit --verbose
-
-# Run a specific test file
-python run_tests.py all --file tests/unit/test_brand.py
+pnpm test:comprehensive
 ```
 
-### Direct pytest
+### Run Quick Tests
 ```bash
-# Run all tests
-pytest
-
-# Run specific category
-pytest tests/unit/
-pytest tests/integration/
-pytest tests/comprehensive/
-
-# Run with markers
-pytest -m unit
-pytest -m integration
-pytest -m comprehensive
-
-# Run specific test
-pytest tests/unit/test_brand.py::test_brand_identity_model
+pnpm test:quick
 ```
 
-## Test Guidelines
-
-### When to Run Which Tests
-
-#### 🚀 **Small Changes** (run unit tests)
-- Bug fixes
-- Simple refactoring
-- Adding new functions
-- Documentation updates
-
+### Generate Quality Report
 ```bash
-python run_tests.py unit
+pnpm evaluate:report data/drafts/gigit/test.html data/brands/gigit.json
 ```
 
-#### 🔗 **Medium Changes** (run unit + integration tests)
-- New features
-- API changes
-- Database schema changes
-- Template modifications
+## 📋 Test Categories
 
+### Phase 1: System Health Checks
+- ✅ Node.js version compatibility
+- ✅ pnpm availability
+- ✅ Python availability
+- ✅ Environment file (.env)
+- ✅ Required directories
+- ✅ Required files
+
+### Phase 2: Asset Generation Tests
+- ✅ Brand data loading
+- ✅ Template resolution
+- ✅ HTML generation
+- ✅ PDF generation
+- ✅ Image generation
+
+### Phase 3: Quality Assessment Tests
+- ✅ Font application
+- ✅ Content accuracy
+- ✅ Visual design
+- ✅ Accessibility
+- ✅ GPT evaluation
+
+### Phase 4: Integration Tests
+- ✅ CLI integration
+- ✅ SSR workflow
+- ✅ File sync
+- ✅ End-to-end workflow
+
+### Phase 5: Performance Tests
+- ✅ Generation speed
+- ✅ Memory usage
+- ✅ File sizes
+
+## 🔍 GPT Asset Evaluator
+
+The GPT Asset Evaluator uses OpenAI's GPT-4 to automatically assess asset quality:
+
+### Features
+- **HTML Quality**: Evaluates code structure, semantic markup, CSS organization
+- **Content Relevance**: Assesses brand alignment and message consistency
+- **Visual Appeal**: Analyzes design quality and user experience
+- **Overall Quality**: Comprehensive evaluation across all dimensions
+
+### Usage Examples
+
+#### Evaluate Single File
 ```bash
-python run_tests.py integration
+pnpm evaluate:single data/drafts/gigit/test.html
 ```
 
-#### 🎯 **Big Changes** (run all tests)
-- Major refactoring
-- Architecture changes
-- New modules
-- Before releases
-
+#### Generate Quality Report
 ```bash
-python run_tests.py all
+pnpm evaluate:report data/drafts/gigit/test.html data/brands/gigit.json
 ```
 
-### Test Development
-
-#### Adding New Tests
-1. **Unit tests**: Add to appropriate `tests/unit/test_*.py` file
-2. **Integration tests**: Add to appropriate `tests/integration/test_*.py` file
-3. **Comprehensive tests**: Add to appropriate `tests/comprehensive/test_*.py` file
-
-#### Test Naming Convention
-- Test files: `test_*.py`
-- Test functions: `test_*`
-- Test classes: `Test*`
-
-#### Test Structure
-```python
-def test_function_name():
-    """Test description"""
-    # Arrange
-    # Act
-    # Assert
+#### Batch Evaluation
+```bash
+pnpm evaluate:batch data/drafts/gigit/
 ```
 
-### Mocking and Dependencies
-- **Unit tests**: Mock external dependencies
-- **Integration tests**: Mock only external APIs
-- **Comprehensive tests**: Use real dependencies when possible
+### Evaluation Criteria
 
-### Performance Considerations
-- **Unit tests**: Should run in < 1 second
-- **Integration tests**: Should run in < 10 seconds
-- **Comprehensive tests**: May take several minutes
+#### HTML Quality (1-10)
+1. Code structure and organization
+2. Semantic HTML usage
+3. CSS organization and best practices
+4. Responsive design implementation
+5. Accessibility features
 
-## CI/CD Integration
+#### Content Relevance (1-10)
+1. Brand name consistency
+2. Message alignment
+3. Tone consistency
+4. Value proposition clarity
+5. Content accuracy
 
-### GitHub Actions Example
-```yaml
-name: Tests
-on: [push, pull_request]
+#### Visual Appeal (1-10)
+1. Color scheme and contrast
+2. Typography and readability
+3. Layout and spacing
+4. Visual hierarchy
+5. Modern design principles
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Run unit tests
-        run: python run_tests.py unit
-      - name: Run integration tests
-        run: python run_tests.py integration
-      - name: Run comprehensive tests
-        run: python run_tests.py comprehensive
+## 📊 Test Reports
+
+### Comprehensive Test Report
+Located at: `tests/comprehensive_test_report.json`
+
+Contains:
+- Test execution timestamp
+- Duration statistics
+- Overall success rate
+- Detailed results by category
+- Individual test outcomes
+
+### Quality Assessment Report
+Located at: `data/drafts/gigit/*_quality_report.json`
+
+Contains:
+- GPT evaluation scores
+- Detailed analysis
+- Recommendations for improvement
+- Quality metrics breakdown
+
+## 🛠️ Test Configuration
+
+### Environment Variables
+```bash
+# Required for GPT evaluation
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Optional: Customize test behavior
+TEST_TIMEOUT=30000
+TEST_VERBOSE=true
 ```
 
-## Troubleshooting
+### Test Thresholds
+- **Font Application**: 100% (all checks must pass)
+- **Content Accuracy**: 100% (all checks must pass)
+- **Visual Design**: 75% (3 out of 4 checks)
+- **Accessibility**: 80% (4 out of 5 checks)
+- **Overall Quality**: 7.0/10 minimum score
+
+## 🔧 Customizing Tests
+
+### Adding New Test Categories
+1. Create test method in `ComprehensiveTestRunner`
+2. Add to appropriate phase in `runAllTests()`
+3. Implement test logic with proper error handling
+4. Return standardized result format
+
+### Example Test Method
+```javascript
+async testCustomFeature() {
+  try {
+    // Test implementation
+    const result = await someTest();
+    
+    return {
+      success: result.success,
+      message: result.message,
+      details: result.details || {}
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Error: ${error.message}`
+    };
+  }
+}
+```
+
+### Modifying GPT Evaluation
+1. Update prompts in `GPTAssetEvaluator`
+2. Adjust evaluation criteria
+3. Modify scoring algorithms
+4. Add new evaluation dimensions
+
+## 📈 Performance Monitoring
+
+### Metrics Tracked
+- **Generation Time**: Total time for asset creation
+- **File Sizes**: HTML, PDF, and image file sizes
+- **Memory Usage**: Peak memory consumption
+- **API Response Times**: GPT evaluation latency
+
+### Performance Thresholds
+- **HTML Generation**: < 30 seconds
+- **PDF Generation**: < 60 seconds
+- **File Size**: HTML > 10KB, PDF > 100KB
+- **Memory Usage**: < 512MB peak
+
+## 🐛 Troubleshooting
 
 ### Common Issues
-1. **Import errors**: Ensure `sys.path` includes the `app` directory
-2. **Missing dependencies**: Install required packages with `pip install -r requirements.txt`
-3. **Test failures**: Check that the app code hasn't changed significantly
+
+#### Test Failures
+1. Check environment setup
+2. Verify required dependencies
+3. Ensure test data availability
+4. Check API key configuration
+
+#### GPT Evaluation Errors
+1. Verify OpenAI API key
+2. Check API rate limits
+3. Ensure internet connectivity
+4. Validate prompt formatting
+
+#### Performance Issues
+1. Monitor system resources
+2. Check file system permissions
+3. Verify network connectivity
+4. Review timeout configurations
 
 ### Debug Mode
+Enable verbose logging:
 ```bash
-# Run with detailed output
-python run_tests.py unit --verbose
-
-# Run specific failing test
-pytest tests/unit/test_brand.py::test_brand_identity_model -v -s
+TEST_VERBOSE=true pnpm test:comprehensive
 ```
+
+## 📚 API Reference
+
+### ComprehensiveTestRunner
+Main test orchestrator class with methods:
+- `runAllTests()`: Execute all test phases
+- `runSystemHealthChecks()`: System validation
+- `runAssetGenerationTests()`: Asset creation tests
+- `runQualityAssessmentTests()`: Quality evaluation
+- `runIntegrationTests()`: Integration validation
+- `runPerformanceTests()`: Performance measurement
+- `generateFinalReport()`: Generate comprehensive report
+
+### GPTAssetEvaluator
+AI-powered quality assessment with methods:
+- `evaluateHTMLQuality()`: HTML code quality
+- `evaluateContentRelevance()`: Brand alignment
+- `evaluateVisualAppeal()`: Design quality
+- `evaluateOverallQuality()`: Comprehensive assessment
+- `generateQualityReport()`: Detailed quality report
+
+## 🤝 Contributing
+
+### Adding Tests
+1. Follow existing test patterns
+2. Include proper error handling
+3. Add comprehensive documentation
+4. Update this README
+
+### Improving Evaluations
+1. Enhance GPT prompts
+2. Add new evaluation criteria
+3. Optimize scoring algorithms
+4. Expand test coverage
+
+## 📄 License
+
+This testing framework is part of the Eigen-UI project and follows the same licensing terms.
+
+## 🆘 Support
+
+For issues or questions:
+1. Check troubleshooting section
+2. Review test logs and reports
+3. Verify environment configuration
+4. Consult project documentation

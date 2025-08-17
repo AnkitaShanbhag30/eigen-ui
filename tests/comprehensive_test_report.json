@@ -1,0 +1,132 @@
+{
+  "timestamp": "2025-08-17T02:25:56.523Z",
+  "duration_seconds": 1,
+  "summary": {
+    "total_tests": 23,
+    "passed_tests": 22,
+    "failed_tests": 1,
+    "success_rate_percent": 96
+  },
+  "results": {
+    "system_health": {
+      "node_version": {
+        "success": true,
+        "message": "Node.js v18.20.8 (OK)"
+      },
+      "pnpm_available": {
+        "success": true,
+        "message": "pnpm available"
+      },
+      "python_available": {
+        "success": true,
+        "message": "Python available"
+      },
+      "env_file": {
+        "success": true,
+        "message": ".env file found"
+      },
+      "required_directories": {
+        "success": true,
+        "message": "All required directories exist"
+      },
+      "required_files": {
+        "success": true,
+        "message": "All required files exist"
+      }
+    },
+    "asset_generation": {
+      "brand_data_loading": {
+        "success": true,
+        "message": "Brand data loaded successfully",
+        "details": {
+          "total_fields": 5,
+          "present_fields": 5,
+          "missing_fields": []
+        }
+      },
+      "template_resolution": {
+        "success": true,
+        "message": "Template resolution working",
+        "details": {
+          "dyad_templates": true,
+          "active_templates": true
+        }
+      },
+      "html_generation": {
+        "success": true,
+        "message": "SSR script validated successfully"
+      },
+      "pdf_generation": {
+        "success": true,
+        "message": "29 PDF files found"
+      },
+      "image_generation": {
+        "success": true,
+        "message": "Images found in generated HTML"
+      }
+    },
+    "quality_assessment": {
+      "font_application": {
+        "success": false,
+        "message": "Font issues: noFallbackFonts",
+        "details": {
+          "font_variables_present": true,
+          "google_fonts_imported": true,
+          "plus_jakarta_detected": true,
+          "inter_detected": true,
+          "times_font_absent": true,
+          "fallback_fonts_present": false,
+          "generic_serif_present": true
+        }
+      },
+      "content_accuracy": {
+        "success": true,
+        "message": "Content accuracy verified"
+      },
+      "visual_design": {
+        "success": true,
+        "message": "Visual design: 4/4 checks passed"
+      },
+      "accessibility": {
+        "success": true,
+        "message": "Accessibility: 4/5 checks passed"
+      },
+      "gpt_evaluation": {
+        "success": true,
+        "message": "GPT evaluation available with API key"
+      }
+    },
+    "integration": {
+      "cli_integration": {
+        "success": true,
+        "message": "CLI integration working"
+      },
+      "ssr_workflow": {
+        "success": true,
+        "message": "SSR workflow available"
+      },
+      "file_sync": {
+        "success": true,
+        "message": "File sync functionality available"
+      },
+      "end_to_end": {
+        "success": true,
+        "message": "End-to-end workflow available"
+      }
+    },
+    "performance": {
+      "generation_speed": {
+        "success": true,
+        "message": "Generation speed test passed"
+      },
+      "memory_usage": {
+        "success": true,
+        "message": "Memory usage test passed"
+      },
+      "file_sizes": {
+        "success": true,
+        "message": "Latest HTML file size: 20KB"
+      }
+    }
+  }
+}

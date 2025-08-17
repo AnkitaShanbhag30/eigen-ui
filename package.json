@@ -1,20 +1,28 @@
 {
   "name": "eigen-ui",
   "private": true,
+  "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "dyad:dev": "pnpm --dir tools/dyad dev",
+    "dyad:dev": "cd tools/dyad && pnpm dev",
     "dyad:sync": "node scripts/dyad-sync.mjs",
-    "ssr": "node scripts/ssr-render.mjs"
+    "ssr": "node scripts/ssr-render.mjs",
+    "test:dyad": "python tests/test_dyad_integration.py",
+    "test:comprehensive": "node scripts/run-tests.mjs --full",
+    "test:quick": "node scripts/run-tests.mjs --quick",
+    "test:report": "node scripts/run-tests.mjs --report-only",
+    "evaluate:single": "node scripts/gpt-asset-evaluator.mjs evaluate",
+    "evaluate:batch": "node scripts/gpt-asset-evaluator.mjs batch",
+    "evaluate:report": "node scripts/gpt-asset-evaluator.mjs report"
   },
   "devDependencies": {
     "chokidar": "^3.5.3",
-    "esbuild": "^0.21.5",
-    "@types/node": "^20.12.7",
-    "@types/react": "^18.2.64",
-    "@types/react-dom": "^18.2.22"
+    "esbuild": "^0.19.8",
+    "@types/node": "^20.8.10",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   }
 }

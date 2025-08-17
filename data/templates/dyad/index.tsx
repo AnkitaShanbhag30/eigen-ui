@@ -404,17 +404,9 @@ export default function Page({ data, userRequirements }: PageProps) {
         <title>{content.hero.title} - {name}</title>
         <meta name="description" content={content.hero.description} />
         
-        {/* Google Fonts links using headingFont and bodyFont, and other detected fonts */}
+        {/* Google Fonts - Single import for each font family */}
         <link href={`https://fonts.googleapis.com/css2?family=${cleanHeadingFont}:wght@400;600;700;800&display=swap`} rel="stylesheet"/>
         <link href={`https://fonts.googleapis.com/css2?family=${cleanBodyFont}:wght@300;400;500;600&display=swap`} rel="stylesheet"/>
-        
-        {/* Dynamic links for other detected fonts */}
-        {fonts_detected.slice(0, 3).map((font, index) => {
-          const cleanFont = font.split(',')[0].trim().replace(/ /g, '+');
-          return (
-            <link key={index} href={`https://fonts.googleapis.com/css2?family=${cleanFont}:wght@400;600;700&display=swap`} rel="stylesheet"/>
-          );
-        })}
 
         <style>{`
           :root {
@@ -424,8 +416,8 @@ export default function Page({ data, userRequirements }: PageProps) {
             --muted: ${colors?.muted || '#d9d8fc'};
             --bg: ${colors?.bg || '#FFFFFF'};
             --text: ${colors?.text || '#0B0B0B'};
-            --heading-font: '${headingFont.split(',')[0].trim()}', sans-serif;
-            --body-font: '${bodyFont.split(',')[0].trim()}', sans-serif;
+            --heading-font: '${headingFont.split(',')[0].trim()}';
+            --body-font: '${bodyFont.split(',')[0].trim()}';
           }
           
           * {
@@ -958,7 +950,7 @@ export default function Page({ data, userRequirements }: PageProps) {
           </main>
 
           <footer className="footer">
-            <p className="footer-text">Generated with ❤️ using Eigen</p>
+            <p className="footer-text">Generated with ❤️ using Dyad + Eigen-UI</p>
             <p className="footer-text">Brand: {name} | Tone: {tone} | Powered by AI</p>
           </footer>
         </div>
