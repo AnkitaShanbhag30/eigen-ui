@@ -88,12 +88,18 @@ def hero_prompts(brand: Dict, parsed: Dict) -> Dict[str, str]:
     
     prompts = {}
     
+    # Common constraints for image generation (no text/logos; abstract, professional)
+    constraints = (
+        " No text, captions, signage, watermarks, or logos."
+        " Abstract, modern, clean composition with professional polish."
+    )
+
     # PDP Product Hero
     if "pdp" in parsed.get("products", []):
         prompts["pdp"] = (
             f"{brand_name} PDP embed: mobile-first hero of an AI assistant suggesting "
             f"high-converting questions; sleek UI, {city}, non-salesy tone; "
-            f"compliant with FDA/meta guardrails."
+            f"compliant with FDA/meta guardrails." + constraints
         )
     
     # Personalized Highlights Hero
@@ -101,28 +107,28 @@ def hero_prompts(brand: Dict, parsed: Dict) -> Dict[str, str]:
         prompts["highlights"] = (
             f"{brand_name} personalized highlights: hero collage that adapts by "
             f"1P data (Klaviyo, quiz) + 3P (ad context, location); "
-            f"dynamic chips showing relevance."
+            f"dynamic chips showing relevance." + constraints
         )
     
     # AI Search Hero
     if "ai_search" in parsed.get("products", []):
         prompts["ai_search"] = (
             f"{brand_name} AI shop assistant: semantic search over large catalog, "
-            f"promotes in-stock items; modern search UI, zero-setup feel."
+            f"promotes in-stock items; modern search UI, zero-setup feel." + constraints
         )
     
     # AI Assistant Hero
     if "ai_assistant" in parsed.get("products", []):
         prompts["ai_assistant"] = (
             f"{brand_name} AI assistant: conversational interface for customer support "
-            f"and product recommendations; friendly, helpful, {city} context."
+            f"and product recommendations; friendly, helpful, {city} context." + constraints
         )
     
     # Default hero if no specific products
     if not prompts:
         prompts["default"] = (
             f"{brand_name} hero: professional, modern interface showcasing "
-            f"AI-powered features; {city} skyline background; clean, trustworthy design."
+            f"AI-powered features; {city} skyline background; clean, trustworthy design." + constraints
         )
     
     return prompts
@@ -240,7 +246,7 @@ def enhance_brief_with_llm(parsed: Dict, brand: Dict, llm_provider=None) -> Dict
     try:
         # Create enhanced prompt for LLM
         prompt = f"""
-        Analyze this brief and enhance the parsing:
+        Analyze this brief and enhance the parsing with enterprise-grade rigor:
         
         Brief: {parsed.get('raw_text', '')}
         Brand: {brand.get('name', 'Unknown')}
@@ -249,8 +255,9 @@ def enhance_brief_with_llm(parsed: Dict, brand: Dict, llm_provider=None) -> Dict
         Provide enhanced parsing with:
         1. Additional product concepts
         2. Refined audience targeting
-        3. Content strategy recommendations
+        3. Content strategy recommendations (specific, non-redundant)
         4. Channel-specific optimizations
+        5. Accessibility and clarity guardrails (scannable, benefit-driven)
         
         Return as JSON.
         """

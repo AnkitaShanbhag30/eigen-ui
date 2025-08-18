@@ -44,6 +44,25 @@ interface BrandData {
     radius?: { sm: number; md: number; lg: number };
   };
   [key: string]: any;
+  generatedOutline?: {
+    headline?: string;
+    subhead?: string;
+    cta?: string;
+    sections?: Array<{
+      title?: string;
+      description?: string;
+      bullets?: string[];
+      content_type?: string;
+      layout_style?: string;
+      blocks?: Array<
+        | { type: 'paragraph'; text: string }
+        | { type: 'bullets'; items: string[] }
+        | { type: 'statement'; text: string }
+        | { type: 'columns'; columns: string[] }
+      >;
+    }>;
+  };
+  generatedImages?: { hero?: string };
 }
 
 interface PageProps {
@@ -56,7 +75,7 @@ interface PageProps {
   };
 }
 
-// Generate smart content using actual brand data
+// Generate smart content using LLM-generated outline when available
 const generateSmartContent = (brandData: BrandData, userRequirements: any) => {
   const { 
     name, 
@@ -69,6 +88,9 @@ const generateSmartContent = (brandData: BrandData, userRequirements: any) => {
   } = brandData;
   
   const { x, y, z, cta } = userRequirements || {};
+
+  // Prefer the generated outline for titles/sections if present
+  const outline = brandData.generatedOutline;
   
   // Extract actual content from brand data
   const extractTextContent = (section: any) => {
@@ -126,36 +148,34 @@ const generateSmartContent = (brandData: BrandData, userRequirements: any) => {
     }));
   };
   
-  // Get feature icons based on keywords
+  // Get feature icons based on keywords (brand-agnostic)
   const getFeatureIcon = (keyword: string) => {
-    const iconMap: { [key: string]: string } = {
-      'AI': '🤖',
-      'Product': '📦',
-      'Pricing': '💰',
-      'About Us': 'ℹ️',
-      'Book a demo': '📅',
-      'Gigit': '✨',
-      'Highlights': '⭐',
-      'Q&A': '❓',
-      'Audience': '👥',
-      'Female': '👩',
-      'Recommended': '👍',
-      'Dry skin': '💧',
-      'NYC': '🏙️',
-      'Shop by concern': '🛍️',
-      'Aging skin': '⏰',
-      'Blemish prone': '🎯',
-      'Minimizing pores': '🔍',
-      'Oily skin': '💦',
-      'Vegan': '🌱',
-      'Geography': '🌍',
-      'ELLA\'S CHOICE': '👑',
-      'Tiktok': '📱',
-      'Gather insights': '📊',
-      'Personalize': '🎨',
-      'Store': '🏪'
-    };
-    return iconMap[keyword] || '✨';
+    const kw = (keyword || '').toLowerCase();
+    if (/\b(ai|ml|agent|model|automation)\b/.test(kw)) return '🤖';
+    if (/\b(product|sku|item|pack)\b/.test(kw)) return '📦';
+    if (/\b(price|pricing|plan|cost|checkout|payment)\b/.test(kw)) return '💰';
+    if (/\b(info|about|learn|help|docs)\b/.test(kw)) return 'ℹ️';
+    if (/\b(book|demo|trial|schedule)\b/.test(kw)) return '📅';
+    if (/\bhighlight|featured|star\b/.test(kw)) return '⭐';
+    if (/\b(q&a|faq|question|ask)\b/.test(kw)) return '❓';
+    if (/\b(audience|users|customers|community)\b/.test(kw)) return '👥';
+    if (/\b(female|women|woman|girl)\b/.test(kw)) return '👩';
+    if (/\b(recommend|suggest|best)\b/.test(kw)) return '👍';
+    if (/\b(dry|hydrate|moisture)\b/.test(kw)) return '💧';
+    if (/\b(nyc|city|urban)\b/.test(kw)) return '🏙️';
+    if (/\b(shop|shopping|cart|concern)\b/.test(kw)) return '🛍️';
+    if (/\b(age|aging|mature)\b/.test(kw)) return '⏰';
+    if (/\b(blemish|acne|spot|target)\b/.test(kw)) return '🎯';
+    if (/\b(pore|minimiz)\b/.test(kw)) return '🔍';
+    if (/\b(oily|oil)\b/.test(kw)) return '💦';
+    if (/\b(vegan|plant|green)\b/.test(kw)) return '🌱';
+    if (/\b(geo|world|globe|region|country)\b/.test(kw)) return '🌍';
+    if (/\b(choice|select|preferred)\b/.test(kw)) return '👑';
+    if (/\b(tiktok|social|mobile|shorts|reels)\b/.test(kw)) return '📱';
+    if (/\b(insight|analytics|metrics|report)\b/.test(kw)) return '📊';
+    if (/\b(personalize|custom|design|brand)\b/.test(kw)) return '🎨';
+    if (/\b(store|retail|shopify)\b/.test(kw)) return '🏪';
+    return '✨';
   };
   
   // Get process steps based on brand context
@@ -179,18 +199,33 @@ const generateSmartContent = (brandData: BrandData, userRequirements: any) => {
     ];
   };
   
-  return {
+  // Map outline sections to our section structure if available
+  const mappedSections = (outline?.sections || [])
+    .filter((s: any) => (s.content_type || '').toLowerCase() !== 'hero')
+    .map((s: any) => ({
+      id: s.content_type || s.title || 'section',
+      type: s.content_type || 'general',
+      title: s.title || 'Section',
+      content: s.description || undefined,
+      bullets: Array.isArray(s.bullets) ? s.bullets : undefined,
+      blocks: Array.isArray(s.blocks) ? s.blocks : undefined,
+      benefits: undefined,
+      features: undefined,
+      testimonials: undefined,
+    }));
+
+  const content = {
     hero: {
-      title: x || name,
-      subtitle: y || tagline,
+      title: (outline?.headline || x || name) as string,
+      subtitle: (outline?.subhead || y || tagline) as string,
       description: description || "Empowering businesses with AI-driven solutions",
       audience: z || "Forward-thinking companies"
     },
-    cta: cta || "Get Started Today",
+    cta: (outline?.cta || cta || "Get Started Today") as string,
     features: getFeatures(),
     process: getProcessSteps(),
     testimonials: getTestimonials(),
-    sections: getSectionContent(),
+    sections: mappedSections.length > 0 ? mappedSections : getSectionContent(),
     brandInfo: {
       name,
       tagline,
@@ -199,6 +234,7 @@ const generateSmartContent = (brandData: BrandData, userRequirements: any) => {
       website: brandData.website
     }
   };
+  return content;
 };
 
 // Image generation using GPT and extracted website images
@@ -322,7 +358,10 @@ export default function Page({ data, userRequirements }: PageProps) {
 
   // Generate smart content and images
   const content = generateSmartContent(data, userRequirements);
-  const images = generateImages(data, userRequirements);
+  const images = {
+    ...generateImages(data, userRequirements),
+    hero: (data.generatedImages && data.generatedImages.hero) || (generateImages(data, userRequirements) as any).hero
+  } as any;
 
   // Generate sections based on content
   const generateSections = () => {
@@ -394,7 +433,9 @@ export default function Page({ data, userRequirements }: PageProps) {
     return sections;
   };
 
-  const sections = generateSections();
+  const sections = (content.sections && content.sections.length > 0)
+    ? content.sections
+    : generateSections();
 
   return (
     <html lang="en">
@@ -461,6 +502,7 @@ export default function Page({ data, userRequirements }: PageProps) {
             font-weight: 800;
             margin-bottom: 1rem;
             line-height: 1.1;
+            text-transform: capitalize;
           }
           
           .tagline {
@@ -566,6 +608,7 @@ export default function Page({ data, userRequirements }: PageProps) {
             margin-bottom: 2rem;
             color: var(--primary);
             position: relative;
+            text-transform: capitalize;
           }
           
           .section-title::after {
@@ -862,6 +905,45 @@ export default function Page({ data, userRequirements }: PageProps) {
                 <h2 className="section-title">{section.title}</h2>
                 <div className="section-content">
                   {section.content && <p>{section.content}</p>}
+                  {section.bullets && (
+                    <ul className="benefits-list">
+                      {section.bullets.map((b: string, i: number) => (
+                        <li key={i}>{b}</li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {section.blocks && section.blocks.length > 0 && (
+                    <div>
+                      {section.blocks.map((block: any, i: number) => {
+                        if (block.type === 'paragraph') {
+                          return <p key={i}>{block.text}</p>;
+                        }
+                        if (block.type === 'statement') {
+                          return <p key={i} style={{ fontWeight: 600 }}>{block.text}</p>;
+                        }
+                        if (block.type === 'bullets') {
+                          return (
+                            <ul key={i} className="benefits-list">
+                              {block.items.map((it: string, j: number) => (
+                                <li key={j}>{it}</li>
+                              ))}
+                            </ul>
+                          );
+                        }
+                        if (block.type === 'columns') {
+                          return (
+                            <div key={i} className="features-grid">
+                              {block.columns.map((col: string, j: number) => (
+                                <div key={j} className="feature-item"><p>{col}</p></div>
+                              ))}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                  )}
                   
                   {section.features && (
                     <div className="features-grid">
@@ -918,40 +1000,12 @@ export default function Page({ data, userRequirements }: PageProps) {
               </section>
             ))}
             
-            {/* Color Palette and Typography sections */}
-            <section className="section">
-              <h2 className="section-title">Brand Identity</h2>
-              <div className="section-content">
-                <p>Our carefully crafted visual identity reflects our commitment to excellence and innovation.</p>
-                <div className="color-palette">
-                  {colors?.palette?.slice(0, 8).map((color, index) => (
-                    <div key={index} className="color-swatch" style={{backgroundColor: color}} title={color}></div>
-                  ))}
-                </div>
-              </div>
-            </section>
-            
-            <section className="section">
-              <h2 className="section-title">Design System</h2>
-              <div className="section-content">
-                <p>Our typography and design system ensures consistency and professional appearance across all touchpoints.</p>
-                <div style={{marginTop: '2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem'}}>
-                  <div>
-                    <h3 style={{fontFamily: `var(--heading-font)`, color: 'var(--primary)', marginBottom: '1rem'}}>Heading Font: {headingFont.split(',')[0].trim()}</h3>
-                    <p style={{fontFamily: `var(--heading-font)`, fontSize: '1.5rem', fontWeight: '600'}}>Beautiful Typography</p>
-                  </div>
-                  <div>
-                    <h3 style={{fontFamily: `var(--body-font)`, color: 'var(--primary)', marginBottom: '1rem'}}>Body Font: {bodyFont.split(',')[0].trim()}</h3>
-                    <p style={{fontFamily: `var(--body-font)`, fontSize: '1.1rem'}}>Optimized for readability and user experience</p>
-                  </div>
-                </div>
-              </div>
-            </section>
+            {/* Removed brand identity and design system sections per requirements */}
           </main>
 
           <footer className="footer">
-            <p className="footer-text">Generated with ❤️ using Dyad + Eigen-UI</p>
-            <p className="footer-text">Brand: {name} | Tone: {tone} | Powered by AI</p>
+            <p className="footer-text">Generated with ❤️ using Eigen-UI</p>
+            <p className="footer-text">Brand: {name} | Powered by AI</p>
           </footer>
         </div>
       </body>

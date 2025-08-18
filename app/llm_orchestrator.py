@@ -42,6 +42,8 @@ class LLMOrchestrator:
         4. Tone and voice guidelines
         5. Visual content suggestions
         
+        Quality guardrails: ensure specificity, non-redundancy, and actionable guidance suitable for enterprise-grade polish.
+        
         Return as JSON with keys: positioning, messaging_pillars, structure, tone_guidelines, visual_suggestions
         """
         
@@ -97,6 +99,7 @@ class LLMOrchestrator:
         3. Addresses specific pain points and desires
         4. Creates emotional connection and urgency
         5. Is tailored for {channel} format
+        6. Avoids vague claims and generic copy; keep it scannable and specific
         
         Return ONLY the messaging framework, no explanations.
         """
@@ -105,7 +108,7 @@ class LLMOrchestrator:
             # Generate audience-specific messaging
             if hasattr(self.llm, 'client'):
                 response = self.llm.client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=os.getenv("OPENAI_MODEL", "gpt-5"),
                     messages=[{"role": "user", "content": audience_prompt}],
                     temperature=0.8,
                     max_tokens=200
@@ -129,14 +132,14 @@ class LLMOrchestrator:
             3. Promises a clear, specific benefit
             4. Uses power words and emotional triggers
             5. Is optimized for {channel} format
-            6. Avoids generic, boring language
+            6. Avoids generic, boring language; keep total headline length ~5-8 words
             
             Return ONLY: "Headline: [headline] | Subheadline: [subheadline]"
             """
             
             if hasattr(self.llm, 'client'):
                 response = self.llm.client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=os.getenv("OPENAI_MODEL", "gpt-5"),
                     messages=[{"role": "user", "content": headline_prompt}],
                     temperature=0.7,
                     max_tokens=150
@@ -169,7 +172,7 @@ class LLMOrchestrator:
             4. Addresses different aspects of the audience's journey
             5. Includes concrete examples and benefits
             6. Is tailored for {channel} format
-            7. Avoids generic, repetitive language
+            7. Avoids generic, repetitive language; no placeholders; scannable bullets
             
             Each section should have:
             - A compelling title (not generic like "Features" or "Benefits")
@@ -183,7 +186,7 @@ class LLMOrchestrator:
             
             if hasattr(self.llm, 'client'):
                 response = self.llm.client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=os.getenv("OPENAI_MODEL", "gpt-5"),
                     messages=[{"role": "user", "content": sections_prompt}],
                     temperature=0.8,
                     max_tokens=400
@@ -253,14 +256,14 @@ class LLMOrchestrator:
             3. Uses action-oriented language
             4. Addresses the audience's primary desire
             5. Is optimized for {channel} format
-            6. Avoids generic language like "Learn More" or "Get Started"
+            6. Avoids generic language like "Learn More" or "Get Started" unless paired with a concrete benefit
             
             Return ONLY the CTA text, no explanations.
             """
             
             if hasattr(self.llm, 'client'):
                 response = self.llm.client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=os.getenv("OPENAI_MODEL", "gpt-5"),
                     messages=[{"role": "user", "content": cta_prompt}],
                     temperature=0.7,
                     max_tokens=50
@@ -318,6 +321,7 @@ class LLMOrchestrator:
         6. Use the brand colors and fonts from the brand data
         7. Make it look like premium, modern SaaS websites with plenty of whitespace and subtle shadows
         8. NO placeholder text like "Stat 1", "Testimonial 1 text", etc. - use REAL content from the outline
+        9. Accessibility and rhythm: ensure keyboard-focusable elements, adequate contrast, and a 4/8px spacing rhythm; typographic hierarchy ~1.25 scale
         """
         
         user_prompt = f"""
@@ -341,13 +345,13 @@ class LLMOrchestrator:
         3. Creates engaging, modern sections for each content piece
         4. Uses the hero_image_path variable for images
         5. Has a professional, modern design aesthetic
-        6. Is fully responsive and accessible
+        6. Is fully responsive and accessible (focus states, min 44px touch targets on mobile)
         """
         
         try:
             if hasattr(self.llm, 'client'):
                 response = self.llm.client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=os.getenv("OPENAI_MODEL", "gpt-5"),
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
@@ -422,7 +426,7 @@ class LLMOrchestrator:
             # Generate visual concept
             if hasattr(self.llm, 'client'):
                 response = self.llm.client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=os.getenv("OPENAI_MODEL", "gpt-5"),
                     messages=[{"role": "user", "content": concept_prompt}],
                     temperature=0.9,
                     max_tokens=100
@@ -446,20 +450,26 @@ class LLMOrchestrator:
             4. Is optimized for AI image generation
             5. ABSOLUTELY NO TEXT, WORDS, OR READABLE CONTENT
             6. Focuses on shapes, colors, patterns, and composition
+            7. Includes subtle motion/interaction cues for a prototype look (e.g., soft motion trails, layered parallax depth,
+               gentle glow to imply focus states, simple gesture-like arrow shapes), without any text or UI words
             
             Return ONLY the image generation prompt, no explanations.
             """
             
             if hasattr(self.llm, 'client'):
                 response = self.llm.client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model="gpt-5",
                     messages=[{"role": "user", "content": image_prompt}],
                     temperature=0.3,
                     max_tokens=150
                 )
                 final_prompt = response.choices[0].message.content.strip()
             else:
-                final_prompt = f"Create {visual_concept} using {brand.get('colors', {}).get('primary', '#000000')} and {brand.get('colors', {}).get('secondary', '#666666')} colors, modern geometric style, clean composition, no text"
+                final_prompt = (
+                    f"Create {visual_concept} using {brand.get('colors', {}).get('primary', '#000000')} and "
+                    f"{brand.get('colors', {}).get('secondary', '#666666')} colors, modern geometric style, clean composition, "
+                    "subtle motion trails, layered depth, gentle focus glow accents, gesture-like arrow shapes, no text"
+                )
             
             # Ensure no text-related words in the prompt
             text_indicators = ['text', 'word', 'letter', 'font', 'type', 'writing', 'read', 'message']
@@ -513,7 +523,8 @@ class LLMOrchestrator:
             print(f"⚠️ Hero image generation error: {e}")
             return None
     
-    def execute_full_workflow(self, brand: Dict, channel: str, x: str, y: str, z: str, cta: str, output_dir: str) -> Dict:
+    def execute_full_workflow(self, brand: Dict, channel: str, x: str, y: str, z: str, cta: str, output_dir: str,
+                              interaction_polish: bool = False, premium_finishing: bool = False) -> Dict:
         """Execute the complete LLM orchestration workflow"""
         print(f"🚀 Starting LLM orchestration workflow for {channel}...")
         
@@ -530,6 +541,13 @@ class LLMOrchestrator:
         # Step 3: Generate dynamic template
         print("🎨 Step 3: Generating dynamic template...")
         template_code = self.generate_template_code(strategy, outline, brand, channel)
+        # Optional polish passes (CSS-only, non-destructive)
+        if interaction_polish:
+            print("✨ Applying Interaction Perfection polish (CSS-only)...")
+            template_code = self._apply_interaction_polish(template_code)
+        if premium_finishing:
+            print("💎 Applying Premium Finishing polish (CSS-only)...")
+            template_code = self._apply_premium_finishing(template_code)
         
         # Step 4: Generate hero image prompt
         print("🖼️ Step 4: Generating hero image prompt...")
@@ -695,3 +713,72 @@ class LLMOrchestrator:
         </body>
         </html>
         """
+
+    def _inject_css(self, template_code: str, css_block: str) -> str:
+        """Inject a CSS <style> block before </head> if present, otherwise prepend to document."""
+        style_tag = f"<style>\n{css_block}\n</style>\n"
+        try:
+            head_close = "</head>"
+            if head_close in template_code:
+                return template_code.replace(head_close, style_tag + head_close, 1)
+            return style_tag + template_code
+        except Exception:
+            return style_tag + template_code
+
+    def _apply_interaction_polish(self, template_code: str) -> str:
+        """Apply micro-interactions and accessibility-focused CSS. Non-destructive, CSS-only."""
+        css = """
+/* Interaction Perfection: micro-interactions and accessibility cues */
+:root { --ease-out: cubic-bezier(0.16, 1, 0.3, 1); }
+a, button { transition: all 0.2s var(--ease-out); }
+a:hover, button:hover { transform: translateY(-1px); }
+a:active, button:active { transform: translateY(0); filter: brightness(0.98); }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px solid rgba(0,0,0,0.6); outline-offset: 2px; }
+.cta, .btn, button[type="button"], button[type="submit"] { min-height: 44px; }
+
+/* Skeleton loader utility */
+[data-skeleton] { position: relative; overflow: hidden; background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.08), rgba(0,0,0,0.06)); }
+[data-skeleton]::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); transform: translateX(-100%); animation: shimmer 1.4s infinite; }
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+
+/* Tooltips (attribute-based) */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-8px); background: rgba(0,0,0,0.8); color: #fff; padding: 6px 8px; border-radius: 6px; font-size: 12px; line-height: 1.2; opacity: 0; pointer-events: none; transition: opacity .2s var(--ease-out), transform .2s var(--ease-out); white-space: nowrap; }
+[data-tooltip]:hover::after, [data-tooltip]:focus-visible::after { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+"""
+        return self._inject_css(template_code, css)
+
+    def _apply_premium_finishing(self, template_code: str) -> str:
+        """Apply premium visual polish CSS (shadows, glass, gradients). Non-destructive, CSS-only."""
+        css = """
+/* Premium Finishing: elevation, glassmorphism, gradient dividers */
+.elev-1 { box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04); }
+.elev-2 { box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04); }
+.elev-3 { box-shadow: 0 12px 24px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06); }
+.elev-4 { box-shadow: 0 24px 48px rgba(0,0,0,0.18), 0 12px 24px rgba(0,0,0,0.10); }
+
+.glass { background: rgba(255,255,255,0.6); backdrop-filter: saturate(150%) blur(12px); border: 1px solid rgba(255,255,255,0.5); }
+.glass-dark { background: rgba(20,20,20,0.4); backdrop-filter: saturate(150%) blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+
+.divider-gradient { height: 1px; background: linear-gradient(90deg, rgba(0,0,0,0), rgba(0,0,0,0.2), rgba(0,0,0,0)); }
+
+/* Gradient text utility (can be applied to headings) */
+.gradient-text { background: linear-gradient(90deg, var(--accent, #14b8a6), var(--primary, #2563eb)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Soft parallax suggestion for hero backgrounds (requires container with .parallax) */
+.parallax { perspective: 1000px; }
+.parallax > .layer { transform: translateZ(0); transition: transform 0.3s var(--ease-out); }
+.parallax:hover > .layer[data-depth="1"] { transform: translateZ(20px) translateY(-2px); }
+.parallax:hover > .layer[data-depth="2"] { transform: translateZ(40px) translateY(-4px); }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .parallax > .layer { transition: none; transform: none !important; }
+}
+"""
+        return self._inject_css(template_code, css)

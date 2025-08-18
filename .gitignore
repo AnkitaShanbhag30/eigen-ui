@@ -186,3 +186,7 @@ tools/dyad/out/
 tools/dyad/sqlite.db
 tools/dyad/userData/
 tools/dyad/.env.local
+
+
+node_modules/
+venv/

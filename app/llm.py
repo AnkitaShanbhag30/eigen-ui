@@ -31,17 +31,27 @@ class OpenAIProvider(LLMProvider):
     def generate_json(self, system: str, user: str) -> Dict:
         """Generate JSON response using OpenAI"""
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
+            model = os.getenv("OPENAI_MODEL", "gpt-5")
+            kwargs = {
+                "model": model,
+                "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user}
                 ],
-                temperature=0.1,
-                max_tokens=1000
-            )
+            }
+            # GPT-5 models require max_completion_tokens instead of max_tokens
+            if str(model).lower().startswith("gpt-5"):
+                kwargs["max_completion_tokens"] = 1000
+                # Prefer structured JSON output when available
+                kwargs["response_format"] = {"type": "json_object"}
+            else:
+                kwargs["max_tokens"] = 1000
+
+            response = self.client.chat.completions.create(**kwargs)
             
-            content = response.choices[0].message.content
+            content = response.choices[0].message.content or ""
+            if not content.strip():
+                return {}
             
             # Extract JSON from response
             json_match = re.search(r'\{.*\}', content, re.DOTALL)

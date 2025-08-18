@@ -10,13 +10,19 @@ from .llm import get_llm_provider
 from .brand import BrandIdentity, Colors, Typography, DesignAdvisor
 from .html_tokens import default_tokens
 
-DESIGN_SYS_PROMPT = """You are a senior brand designer. Given palette + detected fonts + brand adjectives,
-propose:
-- typography.heading and .body (Google Fonts or common system faces)
-- colors.primary/secondary/accent/muted (must come from provided palette or sensible neutrals)
-- spacing scale (integers in px): 4,6,8 keys only
-- radius.md (px)
-- heroBrief: a short image prompt (style+mood) consistent with tone/keywords
+DESIGN_SYS_PROMPT = """You are a senior brand designer.
+
+Given palette + detected fonts + brand adjectives, propose a cohesive, accessible design system.
+
+Follow these guardrails while deciding, but OUTPUT MUST STAY IN THE SAME JSON SHAPE BELOW:
+- Visual hierarchy & typography: establish a 1.25 typographic scale; use sensible font weights (300, 400, 600, 700);
+  line-height ~1.2 for headings, ~1.5 for body, ~1.4 for UI; letter-spacing: -0.02em for large type, 0 for body,
+  up to +0.05em for small caps. Choose Google Fonts or common system families.
+- Color & contrast: pick roles from the provided palette or sensible neutrals; ensure WCAG AA contrast ≥ 4.5:1 for body text.
+- Spacing & layout: use a consistent 4px/8px-based rhythm; return spacing integers in px for keys 4,6,8 only.
+- Radius: prefer modern, soft radii; return a single medium radius in px.
+- Hero brief: short prompt matching tone/keywords; avoid any text-in-image requests.
+
 Return ONLY JSON with:
 { "typography": { "heading":"...", "body":"..." },
   "colors": { "primary":"#....","secondary":"#....","accent":"#....","muted":"#...." },
@@ -92,7 +98,17 @@ Brand Context:
 - Palette: {', '.join(colors.palette[:5]) if colors.palette else 'Not set'}
 """
         
-        system_prompt = """You are a senior brand designer and web typographer. Given the brand context (palette, detected fonts, logo hints, tone, keywords), propose typography pairing (Google Fonts family names), layout variant A|B|C, spacing/radius scales, and color role assignments prioritizing contrast ≥ 4.5:1 for body text. Also provide a brief for a hero/cover image prompt. Return ONLY JSON with:
+        system_prompt = """You are a senior brand designer and web typographer.
+
+Given the brand context (palette, detected fonts, logo hints, tone, keywords), propose:
+- Typography pairing (Google Fonts family names) honoring a 1.25 scale, weights 300/400/600/700,
+  line-heights ~1.2/1.5, sensible letter-spacing as needed.
+- Layout variant A|B|C matching brand personality.
+- Spacing/radius scales using a 4px/8px rhythm; include a reasonable typographic scale array.
+- Color role assignments prioritizing WCAG AA contrast ≥ 4.5:1 for body text.
+- A brief for a hero/cover image prompt (avoid any text-in-image).
+
+Return ONLY JSON with:
 { "typography": { "heading": "...", "body": "..." },
   "layout": "A|B|C",
   "spacing": {"base": 16, "scale": [1,1.25,1.6,2] },
@@ -194,6 +210,11 @@ INSTRUCTIONS:
 5. Use the detected component patterns (cards, grids, lists) appropriately
 6. Ensure content flows with the brand's visual rhythm and spacing
 
+QUALITY GUARDRAILS:
+- Keep language specific, benefit-driven, and scannable (short sentences, strong verbs).
+- Assume a 1.25 type scale, 4/8px spacing rhythm, and WCAG AA contrast; do not output these values, only reflect them in clarity and hierarchy.
+- Avoid placeholders, vague claims, or repeated bullets; each section should add unique value.
+
 Return ONLY valid JSON matching this exact schema:
 {{
   "headline": "Compelling headline (5-8 words) that matches brand tone",
@@ -202,7 +223,7 @@ Return ONLY valid JSON matching this exact schema:
     {{
       "title": "Section title",
       "bullets": ["Key point 1", "Key point 2", "Key point 3"],
-      "content_type": "problem|solution|benefits|features|testimonials|cta",
+      "content_type": "problem|solution|benefits|features|testimonials|cta" - or you can useother similar content types, these are examples,
       "layout_style": "text|card|grid|list|hero",
       "visual_emphasis": "high|medium|low"
     }}
@@ -467,7 +488,9 @@ The content should feel like it was written by the brand team and designed by th
     
     def polish_content(self, outline: Dict[str, Any], brand: BrandIdentity) -> Dict[str, Any]:
         """Polish and refine content using LLM"""
-        system_prompt = """You are a marketing editor. Improve flow, clarity, and specificity. Keep factual, concise. Return ONLY the polished outline JSON with identical shape."""
+        system_prompt = """You are a marketing editor. Improve flow, clarity, and specificity.
+Ensure scannability (short sentences, strong verbs), remove redundancy, and keep benefit-driven phrasing.
+Preserve the original JSON shape and section count. Do not invent placeholders. Return ONLY the polished outline JSON with identical shape."""
         
         user_prompt = f"""Brand tone: {brand.tone}
 Keywords: {', '.join(brand.keywords[:10])}

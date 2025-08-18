@@ -41,9 +41,9 @@ class GPTAssetEvaluator {
 
 Consider these criteria:
 1. Code structure and organization (semantic HTML, proper nesting)
-2. CSS organization and best practices (variables, responsive design)
-3. Accessibility features (alt text, semantic tags, ARIA)
-4. Modern design principles (layout, typography, spacing)
+2. CSS organization and best practices (variables, responsive design, consistent 4/8px rhythm)
+3. Accessibility features (alt text, semantic tags, ARIA, focus states, contrast)
+4. Modern design principles (layout, typography ~1.25 scale, spacing, hierarchy)
 5. Performance considerations (efficient CSS, minimal redundancy)
 
 HTML Content (first 2000 chars):
@@ -77,7 +77,7 @@ Consider these criteria:
 1. Brand name consistency and prominence
 2. Message alignment with brand values
 3. Tone consistency with brand personality
-4. Value proposition clarity and relevance
+4. Value proposition clarity and relevance (specific, benefit-driven, non-redundant)
 5. Content accuracy and brand representation
 
 Brand Data:
@@ -111,11 +111,11 @@ Return ONLY a number between 1-10, followed by a brief explanation (max 100 word
       const prompt = `You are a UI/UX design expert. Evaluate the visual appeal of this HTML content on a scale of 1-10.
 
 Consider these criteria:
-1. Color scheme and contrast (accessibility, brand consistency)
-2. Typography and readability (font choices, hierarchy)
-3. Layout and spacing (grid systems, whitespace)
-4. Visual hierarchy and information architecture
-5. Modern design principles and aesthetics
+1. Color scheme and contrast (accessibility, brand consistency, WCAG AA for body)
+2. Typography and readability (font choices, hierarchy ~1.25 scale)
+3. Layout and spacing (grid systems, whitespace, 4/8px rhythm)
+4. Visual hierarchy and information architecture (scannability)
+5. Modern design principles and aesthetics (premium polish)
 
 HTML Content (first 2000 chars):
 ${htmlContent.substring(0, 2000)}...
@@ -146,10 +146,10 @@ Return ONLY a number between 1-10, followed by a brief explanation (max 100 word
 
 Consider these dimensions:
 1. Technical Quality (HTML structure, CSS, performance)
-2. Content Quality (brand alignment, messaging, relevance)
-3. Design Quality (visual appeal, user experience, accessibility)
+2. Content Quality (brand alignment, messaging, relevance, specificity)
+3. Design Quality (visual appeal, user experience, accessibility, motion basics)
 4. Brand Consistency (identity, tone, values)
-5. Professional Standards (industry best practices)
+5. Professional Standards (industry best practices, enterprise polish)
 
 Brand Data:
 ${JSON.stringify(brandData, null, 2).substring(0, 800)}...
@@ -182,7 +182,7 @@ Return ONLY a number between 1-10, followed by a comprehensive analysis (max 150
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: 'gpt-5',
           messages: [
             {
               role: 'system',

@@ -72,7 +72,7 @@ pnpm evaluate:report data/drafts/gigit/test.html data/brands/gigit.json
 
 ## 🔍 GPT Asset Evaluator
 
-The GPT Asset Evaluator uses OpenAI's GPT-4 to automatically assess asset quality:
+The GPT Asset Evaluator uses OpenAI's GPT-5 to automatically assess asset quality:
 
 ### Features
 - **HTML Quality**: Evaluates code structure, semantic markup, CSS organization

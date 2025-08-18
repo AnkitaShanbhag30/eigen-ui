@@ -393,7 +393,22 @@ def analyze_color_scheme(html: str, base_url: str) -> Dict[str, Any]:
                         for pattern in color_patterns[:-1]:
                             matches = re.findall(pattern, style)
                             if matches:
-                                all_colors.extend(matches)
+                                for match in matches:
+                                    if isinstance(match, tuple):
+                                        # RGB/HSL format -> convert to hex
+                                        if len(match) >= 3:
+                                            try:
+                                                r, g, b = int(match[0]), int(match[1]), int(match[2])
+                                                hex_color = f"#{r:02x}{g:02x}{b:02x}"
+                                                all_colors.append(hex_color)
+                                            except Exception:
+                                                pass
+                                    elif isinstance(match, str):
+                                        if match.startswith('#'):
+                                            all_colors.append(match)
+                                        elif match.startswith('var'):
+                                            var_name = match.strip('var(--)')
+                                            all_colors.append(f"var-{var_name}")
     
     # 5. Look for colors in data attributes
     for element in soup.find_all(attrs={'data-color': True}):

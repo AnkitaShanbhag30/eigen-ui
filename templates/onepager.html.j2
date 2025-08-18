@@ -1,18 +1,27 @@
 {% extends "base.html.j2" %}
 
 {% block content %}
+{% set _title = outline.headline or (custom_data.title if custom_data is defined else "Your Compelling Headline") %}
+{% set _subtitle = outline.subhead or (custom_data.subtitle if custom_data is defined else "") %}
+{% set _cta = outline.cta or (custom_data.cta if custom_data is defined else "") %}
 <!-- Hero Section with Brand-Integrated Styling -->
 <section class="hero bg-gradient-to-br from-brand-primary to-brand-secondary text-white p-8 rounded-3xl mb-8">
     <div class="text-center">
-        <h1 class="text-4xl font-bold mb-4">{{ outline.headline or custom_data.title or "Your Compelling Headline" }}</h1>
-        {% if outline.subhead or custom_data.subtitle %}
-            <p class="text-xl mb-6 opacity-90">{{ outline.subhead or custom_data.subtitle }}</p>
+        <h1 class="text-4xl font-bold mb-4">{{ _title }}</h1>
+        {% if _subtitle %}
+            <p class="text-xl mb-6 opacity-90">{{ _subtitle }}</p>
+        {% endif %}
+        {% if hero_url %}
+            <div class="hero-image-wrapper relative mt-6">
+                <img src="{{ hero_url }}" alt="hero" class="hero-img w-full rounded-2xl"/>
+                <div class="hero-overlay"></div>
+            </div>
         {% endif %}
         
         <!-- Dynamic CTA Button Based on Brand Patterns -->
-        {% if outline.cta or custom_data.cta %}
+        {% if _cta %}
             <a href="#" class="btn bg-white text-brand-primary hover:bg-gray-100 text-lg px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
-                {{ outline.cta or custom_data.cta }}
+                {{ _cta }}
             </a>
         {% endif %}
         
@@ -94,7 +103,7 @@
     <!-- Dynamic CTA Based on Brand Patterns -->
     <div class="flex justify-center gap-4 flex-wrap">
         <a href="#" class="btn bg-white text-brand-primary hover:bg-gray-100 px-8 py-4 rounded-full font-semibold shadow-lg">
-            {{ outline.cta or custom_data.cta or "Get Started Today" }}
+            {{ _cta or "Get Started Today" }}
         </a>
         
         <!-- Secondary CTA if Brand Supports Multiple Actions -->

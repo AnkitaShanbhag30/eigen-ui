@@ -372,11 +372,10 @@ def generate(
     w: str = typer.Option("", "--w", help="Additional context or path:./file.txt"),
     cta: str = typer.Option("", "--cta", help="Call to action"),
     hero: str = typer.Option("skip", "--hero", help="Hero image: auto, skip, or path:./image.png"),
-    layout: str = typer.Option("auto", "--layout", help="Layout selection: auto, manual, or specific template ID"),
+    layout: str = typer.Option("manual", "--layout", help="Layout selection: manual (default) or specific template ID"),
     channels: str = typer.Option("onepager", "--channels", help="Channels to generate: onepager,story,linkedin (comma-separated)"),
     variants: int = typer.Option(1, "--variants", help="Number of variants to generate when using auto-layout"),
-    brief: str = typer.Option("", "--brief", help="Brief file path for automatic channel/deliverable detection"),
-    force_html: bool = typer.Option(False, "--force-html", help="Force HTML generation instead of Dyad SSR")
+    brief: str = typer.Option("", "--brief", help="Brief file path for automatic channel/deliverable detection")
 ):
     """Generate content using brand identity and template with multiple export formats"""
     typer.echo(f"Generating content for brand {slug}...")
@@ -388,114 +387,42 @@ def generate(
             typer.echo(f"❌ Brand {slug} not found", err=True)
             raise typer.Exit(1)
         
-        # Parse channels
-        channel_list = [ch.strip() for ch in channels.split(",")]
-        
-        # Handle auto-layout vs manual template selection
-        if layout == "auto" or template == "auto":
-            typer.echo("🎯 Using adaptive template selection...")
-            
-            # Import the new adaptive system
-            from app.layout_selector import analyze_brand_content_fit, get_template_recommendations
-            from app.palette_harmonizer import propose_theme, propose_theme_variants
-            from app.judges import judge_color_schemes
-            
-            # Generate color theme variants
-            theme_variants = propose_theme_variants(brand.model_dump(), variants)
-            typer.echo(f"🎨 Generated {len(theme_variants)} color theme variants")
-            
-            # Judge color schemes
-            rankings = judge_color_schemes(theme_variants, brand.model_dump())
-            best_theme = theme_variants[rankings[0]]
-            typer.echo(f"🎨 Selected theme: {best_theme.get('variant_name', 'base')}")
-            
-            # Generate content for each channel
-            all_results = {}
-            
-            for channel in channel_list:
-                typer.echo(f"\n📱 Generating for {channel} channel...")
-                
-                # Get template recommendations
-                recommendations = get_template_recommendations(brand, channel, include_reasoning=True, top_k=variants)
-                
-                if not recommendations:
-                    typer.echo(f"⚠️  No templates found for {channel} channel")
-                    continue
-                
-                typer.echo(f"🎯 Top {channel} templates:")
-                for i, rec in enumerate(recommendations[:variants]):
-                    typer.echo(f"  {i+1}. {rec['id']} (Score: {rec['score']:.2f})")
-                    if rec.get('reasoning'):
-                        for reason in rec['reasoning'][:2]:
-                            typer.echo(f"     • {reason}")
-                
-                # Generate content for top template
-                top_template = recommendations[0]
-                typer.echo(f"🎨 Using template: {top_template['id']}")
-                
-                # Generate content using existing system
-                from app.generate import generate_assets
-                result = generate_assets(slug, brand.model_dump(), channel, x, y, z, w, cta, hero, force_html)
-                
-                # Store results
-                all_results[channel] = {
-                    'template': top_template,
-                    'theme': best_theme,
-                    'result': result
-                }
-                
-                typer.echo(f"✅ Generated {channel} content successfully!")
-                typer.echo(f"   📁 HTML: {result['paths']['html']}")
-                if result['paths']['pdf']:
-                    typer.echo(f"   📄 PDF: {result['paths']['pdf']}")
-            
-            # Show summary
-            typer.echo(f"\n🎉 Multi-channel generation complete!")
-            typer.echo(f"📊 Generated for {len(all_results)} channels:")
-            for channel, data in all_results.items():
-                template_id = data['template']['id']
-                score = data['template']['score']
-                typer.echo(f"   • {channel}: {template_id} (Score: {score:.2f})")
-            
-            return all_results
-            
-        else:
-            # Use existing manual template system
-            typer.echo(f"🎯 Using manual template: {template}")
-            
-            # Generate content using existing system
-            from app.generate import generate_assets
-            result = generate_assets(slug, brand.model_dump(), template, x, y, z, w, cta, hero)
-            
-            # Show results
-            typer.echo("✅ Content generated successfully!")
-            typer.echo(f"📁 HTML: {result['paths']['html']}")
-            if result['paths']['pdf']:
-                typer.echo(f"📄 PDF: {result['paths']['pdf']}")
-            if result['paths']['docx']:
-                typer.echo(f"📝 DOCX: {result['paths']['docx']}")
-            if result['paths']['zip']:
-                typer.echo(f"📦 ZIP Package: {result['paths']['zip']}")
-            
-            # Show design tokens
-            tokens = result.get('tokens', {})
-            if tokens:
-                typer.echo(f"\n🎨 Design Tokens:")
-                typer.echo(f"   Typography: {tokens.get('font_heading', 'N/A')} + {tokens.get('font_body', 'N/A')}")
-                typer.echo(f"   Colors: Primary {tokens.get('colors', {}).get('primary', 'N/A')}")
-                typer.echo(f"   Max width: {tokens.get('max_width', 'N/A')}px")
-            
-            # Show outline
-            outline = result.get('outline', {})
-            if outline:
-                typer.echo(f"\n📋 Generated Outline:")
-                typer.echo(f"   Headline: {outline.get('headline', 'N/A')}")
-                if outline.get('subhead'):
-                    typer.echo(f"   Subhead: {outline['subhead']}")
-                typer.echo(f"   CTA: {outline.get('cta', 'N/A')}")
-                typer.echo(f"   Sections: {len(outline.get('sections', []))}")
-            
-            return result
+        # Always use manual template selection to tighten scope
+        typer.echo(f"🎯 Using manual template: {template}")
+
+        # Generate content using existing system
+        from app.generate import generate_assets
+        result = generate_assets(slug, brand.model_dump(), template, x, y, z, w, cta, hero)
+
+        # Show results
+        typer.echo("✅ Content generated successfully!")
+        typer.echo(f"📁 HTML: {result['paths']['html']}")
+        if result['paths']['pdf']:
+            typer.echo(f"📄 PDF: {result['paths']['pdf']}")
+        if result['paths']['docx']:
+            typer.echo(f"📝 DOCX: {result['paths']['docx']}")
+        if result['paths']['zip']:
+            typer.echo(f"📦 ZIP Package: {result['paths']['zip']}")
+
+        # Show design tokens
+        tokens = result.get('tokens', {})
+        if tokens:
+            typer.echo(f"\n🎨 Design Tokens:")
+            typer.echo(f"   Typography: {tokens.get('font_heading', 'N/A')} + {tokens.get('font_body', 'N/A')}")
+            typer.echo(f"   Colors: Primary {tokens.get('colors', {}).get('primary', 'N/A')}")
+            typer.echo(f"   Max width: {tokens.get('max_width', 'N/A')}px")
+
+        # Show outline
+        outline = result.get('outline', {})
+        if outline:
+            typer.echo(f"\n📋 Generated Outline:")
+            typer.echo(f"   Headline: {outline.get('headline', 'N/A')}")
+            if outline.get('subhead'):
+                typer.echo(f"   Subhead: {outline['subhead']}")
+            typer.echo(f"   CTA: {outline.get('cta', 'N/A')}")
+            typer.echo(f"   Sections: {len(outline.get('sections', []))}")
+
+        return result
         
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)
@@ -870,7 +797,9 @@ def ai_generate(
     output_dir: str = typer.Option("", "--output", help="Output directory (optional)"),
     save_template: bool = typer.Option(False, "--save-template", help="Save the generated template for reuse"),
     show_workflow: bool = typer.Option(True, "--show-workflow", help="Show detailed workflow steps"),
-    force_html: bool = typer.Option(False, "--force-html", help="Force HTML generation instead of Dyad SSR")
+    force_html: bool = typer.Option(False, "--force-html", help="Force HTML generation instead of Dyad SSR"),
+    interaction_polish: bool = typer.Option(False, "--interaction-polish", help="Apply Interaction Perfection CSS polish"),
+    premium_finishing: bool = typer.Option(False, "--premium-finishing", help="Apply Premium Finishing CSS polish")
 ):
     """Generate content using AI-powered LLM orchestration (creates content, images, and templates)"""
     typer.echo(f"🤖 AI-Powered Content Generation for {channel} channel...")
@@ -893,7 +822,11 @@ def ai_generate(
         orchestrator = LLMOrchestrator()
         
         # Execute full AI workflow
-        results = orchestrator.execute_full_workflow(brand.model_dump(), channel, x, y, z, cta, output_dir)
+        results = orchestrator.execute_full_workflow(
+            brand.model_dump(), channel, x, y, z, cta, output_dir,
+            interaction_polish=interaction_polish,
+            premium_finishing=premium_finishing,
+        )
         
         # Save results
         results_file = os.path.join(output_dir, f"{channel}_workflow_results.json")
@@ -988,7 +921,9 @@ def ai_workflow(
     cta: str = typer.Option("", "--cta", help="Call to action"),
     save_templates: bool = typer.Option(True, "--save-templates", help="Save generated templates"),
     parallel: bool = typer.Option(False, "--parallel", help="Run channels in parallel (experimental)"),
-    force_html: bool = typer.Option(False, "--force-html", help="Force HTML generation instead of Dyad SSR")
+    force_html: bool = typer.Option(False, "--force-html", help="Force HTML generation instead of Dyad SSR"),
+    interaction_polish: bool = typer.Option(False, "--interaction-polish", help="Apply Interaction Perfection CSS polish"),
+    premium_finishing: bool = typer.Option(False, "--premium-finishing", help="Apply Premium Finishing CSS polish")
 ):
     """Generate content across multiple channels using AI orchestration"""
     typer.echo(f"🚀 Multi-Channel AI Workflow for {slug}...")
@@ -1021,7 +956,9 @@ def ai_workflow(
             def generate_channel(channel):
                 try:
                     return channel, orchestrator.execute_full_workflow(
-                        brand.model_dump(), channel, x, y, z, cta, output_dir
+                        brand.model_dump(), channel, x, y, z, cta, output_dir,
+                        interaction_polish=interaction_polish,
+                        premium_finishing=premium_finishing,
                     )
                 except Exception as e:
                     return channel, {'error': str(e)}
@@ -1038,7 +975,9 @@ def ai_workflow(
             for channel in channel_list:
                 typer.echo(f"\n📱 Generating for {channel} channel...")
                 result = orchestrator.execute_full_workflow(
-                    brand.model_dump(), channel, x, y, z, cta, output_dir
+                    brand.model_dump(), channel, x, y, z, cta, output_dir,
+                    interaction_polish=interaction_polish,
+                    premium_finishing=premium_finishing,
                 )
                 all_results[channel] = result
         

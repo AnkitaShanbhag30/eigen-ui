@@ -24,10 +24,12 @@ def judge_color_schemes(candidates: List[Dict], brand: Dict, llm_provider=None) 
         brand_keywords = brand.get("keywords", [])
         
         prompt = f"""
+        You are an accessibility-first brand design judge.
         Rank these color schemes for {brand_name} based on:
         1. Taste and visual appeal
         2. Brand fit ({brand_tone} tone, keywords: {', '.join(brand_keywords[:5])})
-        3. Accessibility and contrast
+        3. Accessibility and contrast (WCAG AA for body text)
+        4. Practical UI usage (primary/action, secondary/info, semantic/status roles)
         
         Color schemes:
         {_format_color_schemes_for_llm(candidates)}
@@ -193,10 +195,11 @@ def judge_template_selection(templates: List[Dict], brand: Dict,
         content_type = content_outline.get("template", "onepager")
         
         prompt = f"""
-        Rank these templates for {brand_name} {content_type} based on:
-        1. Content fit (headlines, sections, CTA placement)
+        You are a senior UX judge. Rank these templates for {brand_name} {content_type} based on:
+        1. Content fit (headlines, sections, CTA placement; unique sections, non-redundant)
         2. Brand personality alignment
-        3. Visual hierarchy and readability
+        3. Visual hierarchy and readability (assume ~1.25 type scale, 4/8px rhythm)
+        4. Accessibility (focus states, adequate contrast, touch target sizing on mobile)
         
         Templates:
         {_format_templates_for_llm(templates)}

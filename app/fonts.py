@@ -83,3 +83,47 @@ def get_fonts_from_css_urls(css_urls: List[str]) -> List[str]:
 def get_default_fonts() -> List[str]:
     """Return default fonts when extraction fails"""
     return ["Inter"] 
+
+def _extract_fonts_from_html(html: str) -> List[str]:
+    """Lightweight extraction of font families from HTML inline styles or link tags."""
+    fonts: List[str] = []
+    try:
+        # Look for Google Fonts link tags
+        link_matches = re.findall(r'href="https://fonts.googleapis.com/[^\"]+family=([^"]+)', html, re.IGNORECASE)
+        for match in link_matches:
+            parts = [p.strip() for p in match.split("&")[0].split(':')[0].split('+') if p.strip()]
+            fonts.extend(parts)
+
+        # Look for inline style="font-family: ..." occurrences
+        inline_matches = re.findall(r'font-family\s*:\s*([^;"\']+)', html, re.IGNORECASE)
+        for m in inline_matches:
+            for name in [n.strip().strip('"\'') for n in m.split(',')]:
+                if name and name.lower() not in ['inherit', 'initial', 'unset', 'serif', 'sans-serif', 'monospace']:
+                    fonts.append(name)
+    except Exception:
+        pass
+    # Deduplicate and cap
+    uniq: List[str] = []
+    for f in fonts:
+        if f not in uniq:
+            uniq.append(f)
+    return uniq[:10]
+
+def get_fonts_from_html_and_css(html: str, css_urls: List[str]) -> List[str]:
+    """Extract fonts from both HTML and linked CSS.
+
+    - HTML: parse Google Fonts links and inline font-family usage
+    - CSS: fetch each CSS and extract @font-face and font-family declarations
+    """
+    fonts = []
+    fonts.extend(_extract_fonts_from_html(html or ""))
+    try:
+        fonts.extend(get_fonts_from_css_urls(css_urls or []))
+    except Exception:
+        pass
+    # Normalize and dedupe
+    clean = []
+    for f in fonts:
+        if f and f not in clean:
+            clean.append(f)
+    return clean[:10] if clean else get_default_fonts()

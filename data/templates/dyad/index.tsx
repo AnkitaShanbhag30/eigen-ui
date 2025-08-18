@@ -918,40 +918,12 @@ export default function Page({ data, userRequirements }: PageProps) {
               </section>
             ))}
             
-            {/* Color Palette and Typography sections */}
-            <section className="section">
-              <h2 className="section-title">Brand Identity</h2>
-              <div className="section-content">
-                <p>Our carefully crafted visual identity reflects our commitment to excellence and innovation.</p>
-                <div className="color-palette">
-                  {colors?.palette?.slice(0, 8).map((color, index) => (
-                    <div key={index} className="color-swatch" style={{backgroundColor: color}} title={color}></div>
-                  ))}
-                </div>
-              </div>
-            </section>
-            
-            <section className="section">
-              <h2 className="section-title">Design System</h2>
-              <div className="section-content">
-                <p>Our typography and design system ensures consistency and professional appearance across all touchpoints.</p>
-                <div style={{marginTop: '2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem'}}>
-                  <div>
-                    <h3 style={{fontFamily: `var(--heading-font)`, color: 'var(--primary)', marginBottom: '1rem'}}>Heading Font: {headingFont.split(',')[0].trim()}</h3>
-                    <p style={{fontFamily: `var(--heading-font)`, fontSize: '1.5rem', fontWeight: '600'}}>Beautiful Typography</p>
-                  </div>
-                  <div>
-                    <h3 style={{fontFamily: `var(--body-font)`, color: 'var(--primary)', marginBottom: '1rem'}}>Body Font: {bodyFont.split(',')[0].trim()}</h3>
-                    <p style={{fontFamily: `var(--body-font)`, fontSize: '1.1rem'}}>Optimized for readability and user experience</p>
-                  </div>
-                </div>
-              </div>
-            </section>
+            {/* Removed brand identity and design system sections per requirements */}
           </main>
 
           <footer className="footer">
-            <p className="footer-text">Generated with ❤️ using Dyad + Eigen-UI</p>
-            <p className="footer-text">Brand: {name} | Tone: {tone} | Powered by AI</p>
+            <p className="footer-text">Generated with ❤️ using Eigen-UI</p>
+            <p className="footer-text">Brand: {name} | Powered by AI</p>
           </footer>
         </div>
       </body>

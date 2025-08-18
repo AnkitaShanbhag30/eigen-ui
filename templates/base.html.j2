@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -32,13 +32,21 @@
     
     <style>
         :root {
-            /* Dynamic Color Variables from Ingested Brand Data */
-            --brand-primary: {{ brand.colors.primary or '#0C69F5' }};
-            --brand-secondary: {{ brand.colors.secondary or '#6b7280' }};
-            --brand-accent: {{ brand.colors.accent or '#f59e0b' }};
-            --brand-muted: {{ brand.colors.muted or '#9ca3af' }};
-            --brand-bg: {{ brand.colors.bg or '#ffffff' }};
-            --brand-text: {{ brand.colors.text or '#111827' }};
+            /* Dynamic Color Variables from Tokens (safe even if brand.colors missing) */
+            --brand-primary: {{ tokens.colors.primary }};
+            --brand-secondary: {{ tokens.colors.secondary }};
+            --brand-accent: {{ tokens.colors.accent }};
+            --brand-muted: {{ tokens.colors.muted }};
+            --brand-bg: {{ tokens.colors.bg }};
+            --brand-text: {{ tokens.colors.text }};
+
+            /* Back-compat variables expected by tests/templates */
+            --color-primary: {{ tokens.colors.primary }};
+            --color-secondary: {{ tokens.colors.secondary }};
+            --color-accent: {{ tokens.colors.accent }};
+            --color-muted: {{ tokens.colors.muted }};
+            --color-bg: {{ tokens.colors.bg }};
+            --color-text: {{ tokens.colors.text }};
             
             /* Dynamic Typography from Ingested Data */
             --font-heading: {{ brand.fonts_detected[0] if brand.fonts_detected else (brand.typography.heading or 'Inter') }}, {{ brand.typography.fallbacks[0] if brand.typography.fallbacks else 'Inter' }}, system-ui, sans-serif;
@@ -98,6 +106,9 @@
                 --max-width: 1200px;
             {% endif %}
         }
+        /* Back-compat usage to expose var(--color-*) tokens in the stylesheet body */
+        ._v0_color_primary { color: var(--color-primary); }
+        ._v0_color_secondary { background-color: var(--color-secondary); }
         
         * {
             margin: 0;

@@ -1,5 +1,5 @@
 # app/adapters.py
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 try:
     from pydantic import BaseModel  # v2
 except Exception:
@@ -11,7 +11,7 @@ def _to_dict(x):
         return x.model_dump() if hasattr(x, "model_dump") else x.dict()
     return x
 
-def coerce_ui_layout(raw: Dict[str, Any] | None) -> Dict[str, Any]:
+def coerce_ui_layout(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Ensure BrandIdentity.ui_layout matches the UILayoutData schema in brand.py:
       - design_patterns: List[DesignPattern]  --> list of dicts with normalized keys
